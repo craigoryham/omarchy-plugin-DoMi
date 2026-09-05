@@ -28,6 +28,15 @@ BarWidget {
   readonly property string displayText: formatted(displayDate)
   readonly property var verticalLines: displayText.split("\n")
 
+  // ---- MTWTFSS day-of-week strip (mirrors Panel.qml dowRow). A leading
+  //      "dddd" token in the active format renders as the letter strip
+  //      instead of the full day name; the rest of the format follows.
+  readonly property var dowLetters: ["M", "T", "W", "T", "F", "S", "S"]
+  readonly property var dowIndices: [1, 2, 3, 4, 5, 6, 0]
+  readonly property int currentDow: displayDate.getDay()
+  readonly property bool dowStrip: !vertical && activeFormat.indexOf("dddd") === 0
+  readonly property string dowTimeFormat: activeFormat.replace(/^dddd\s*/, "")
+
   // ---- DoMi agenda state
   property var agendaBlocks: []
   property var allBlocks: []
@@ -57,6 +66,10 @@ BarWidget {
 
   function formatted(date) {
     return Qt.formatDateTime(date, activeFormat.replace(/ww/g, Model.isoWeekLiteral(date.getFullYear(), date.getMonth(), date.getDate())))
+  }
+
+  function formattedPart(format, date) {
+    return Qt.formatDateTime(date, String(format).replace(/ww/g, Model.isoWeekLiteral(date.getFullYear(), date.getMonth(), date.getDate())))
   }
 
   function updateAgenda() {
@@ -94,7 +107,9 @@ BarWidget {
     if (panelLoader.item) panelLoader.item.toggleWeekStart()
   }
 
-  readonly property real openPanelIndicatorWidth: button.labelWidth
+  readonly property real openPanelIndicatorWidth: button.labelVisible
+    ? button.labelWidth
+    : (pillRow.visible ? pillRow.implicitWidth : 0)
   readonly property real openPanelIndicatorHeight: Math.max(Style.space(10), Math.round(Style.bar.iconSlot * 0.55))
 
   readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
@@ -171,8 +186,9 @@ BarWidget {
     anchors.fill: parent
     bar: root.bar
     text: root.vertical ? "" : root.displayText
-    labelVisible: !root.vertical
+    labelVisible: !root.vertical && !root.dowStrip
     hasVisualContent: root.vertical ? root.verticalLines.length > 0 : text !== ""
+    fixedWidth: root.dowStrip ? pillRow.implicitWidth + button.scaledHorizontalMargin * 2 : -1
     fixedHeight: root.vertical ? root.verticalLines.length * Style.bar.iconSlot : -1
     horizontalMargin: 8.75
     verticalPadding: 8.75
@@ -200,6 +216,48 @@ BarWidget {
             : button.fontSize
           color: button.foreground
         }
+      }
+    }
+
+    // ---- MTWTFSS day-of-week strip + time (horizontal only). When the
+    //      active format begins with "dddd", the day word is replaced by the
+    //      letter strip with today's letter accented — mirroring the panel.
+    Row {
+      id: pillRow
+      visible: root.dowStrip
+      anchors.centerIn: parent
+      spacing: Style.space(10)
+
+      Row {
+        spacing: Style.space(4)
+        anchors.verticalCenter: parent.verticalCenter
+
+        Repeater {
+          model: 7
+
+          Text {
+            required property int index
+            text: root.dowLetters[index]
+            color: root.dowIndices[index] === root.currentDow
+              ? Color.accent
+              : Qt.darker(button.foreground, 1.5)
+            font.family: button.fontFamily
+            font.pixelSize: Style.font.caption
+            font.letterSpacing: 1
+            font.bold: root.dowIndices[index] === root.currentDow
+            opacity: root.dowIndices[index] === root.currentDow ? 1.0 : 0.45
+            anchors.verticalCenter: parent.verticalCenter
+          }
+        }
+      }
+
+      Text {
+        visible: root.dowTimeFormat !== ""
+        anchors.verticalCenter: parent.verticalCenter
+        text: root.formattedPart(root.dowTimeFormat, root.displayDate)
+        color: button.foreground
+        font.family: button.fontFamily
+        font.pixelSize: button.fontSize
       }
     }
   }

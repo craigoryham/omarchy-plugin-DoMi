@@ -18,6 +18,9 @@ Panel {
   property var hostWidget: null
   readonly property var barIdentity: hostWidget || root
 
+  // ---- DoMi brand
+  readonly property color brandColor: "#cba6f7"
+
   // ---- Today
   property date today: new Date()
   readonly property string todayKey: Model.keyForDate(today)
@@ -47,11 +50,6 @@ Panel {
   readonly property string nextWeekStartLabel: labelLocale.dayName(Model.toggledWeekStart(weekStart), Locale.LongFormat)
   readonly property var weekdays: Model.weekdayOrder(weekStart)
   readonly property var weeks: Model.monthGrid(viewYear, viewMonth, weekStart, todayKey)
-
-  // ---- MTWTFSS day indices: M=1 T=2 W=3 T=4 F=5 S=6 S=0
-  readonly property var dowLetters: ["M", "T", "W", "T", "F", "S", "S"]
-  readonly property var dowIndices: [1, 2, 3, 4, 5, 6, 0]
-  readonly property int currentDow: today.getDay()
 
   // ---- DoMi agenda (reactive mirror of the host widget's agendaBlocks)
   readonly property var agendaBlocks: (root.hostWidget && root.hostWidget.agendaBlocks) || []
@@ -246,59 +244,43 @@ Panel {
           width: Math.max(calendarScroll.width, gridColumn.width)
           spacing: Style.space(8)
 
-          // ---- MTWTFSS day indicator strip
-          Item {
-            width: parent.width
-            height: dowRow.height
-
-            Row {
-              id: dowRow
-              anchors.horizontalCenter: parent.horizontalCenter
-              spacing: Style.space(14)
-
-              Repeater {
-                model: 7
-
-                Text {
-                  required property int index
-                  text: root.dowLetters[index]
-                  color: root.dowIndices[index] === root.currentDow
-                    ? Color.accent
-                    : Qt.darker(root.contentForeground, 1.5)
-                  font.family: root.contentFontFamily
-                  font.pixelSize: Style.font.caption
-                  font.letterSpacing: 1
-                  font.bold: root.dowIndices[index] === root.currentDow
-                  opacity: root.dowIndices[index] === root.currentDow ? 1.0 : 0.45
-                }
-              }
-            }
-          }
-
           // ---- Hero: today, centered
           Item {
             width: parent.width
-            height: heroRow.height
+            height: heroColumn.height
 
-            Row {
-              id: heroRow
+            Column {
+              id: heroColumn
               anchors.horizontalCenter: parent.horizontalCenter
-              spacing: Style.space(22)
+              spacing: Style.space(6)
 
-              Text {
-                anchors.baseline: heroDate.baseline
-                text: "󰃭"
-                color: heroMouse.containsMouse
-                  ? Style.hoverStateColor(root.contentForeground, Color.accent)
-                  : root.contentForeground
-                font.family: root.contentFontFamily
-                font.pixelSize: 48
+              Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: Style.space(12)
+
+                Text {
+                  text: "DoMi"
+                  color: root.brandColor
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.displayLarge
+                  font.letterSpacing: 1.2
+                }
+
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: "󰃭"
+                  color: heroMouse.containsMouse
+                    ? Style.hoverStateColor(root.contentForeground, Color.accent)
+                    : root.contentForeground
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.displayLarge
+                }
               }
 
               Text {
                 id: heroDate
                 textFormat: Text.PlainText
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenter: parent.horizontalCenter
                 text: Qt.formatDate(root.today, "MMMM d")
                 color: heroMouse.containsMouse
                   ? Style.hoverStateColor(root.contentForeground, Color.accent)
@@ -311,10 +293,10 @@ Panel {
 
             MouseArea {
               id: heroMouse
-              x: heroRow.x
-              y: heroRow.y
-              width: heroRow.width
-              height: heroRow.height
+              x: heroColumn.x
+              y: heroColumn.y
+              width: heroColumn.width
+              height: heroColumn.height
               enabled: !root.viewingCurrentMonth
               hoverEnabled: enabled
               cursorShape: Qt.PointingHandCursor
@@ -324,6 +306,28 @@ Panel {
                 visible: heroMouse.containsMouse
                 text: "Back to today"
                 fontFamily: root.contentFontFamily
+              }
+            }
+
+            // Open DoMi link — top-right corner of the hero
+            Text {
+              textFormat: Text.PlainText
+              anchors.top: parent.top
+              anchors.right: parent.right
+              text: "Open DoMi →"
+              color: doMiMouse.containsMouse
+                ? Style.hoverStateColor(root.contentForeground, Color.accent)
+                : Qt.darker(root.contentForeground, 1.5)
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              font.letterSpacing: 1
+
+              MouseArea {
+                id: doMiMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.openDoMi()
               }
             }
           }
@@ -814,26 +818,6 @@ Panel {
                     font.pixelSize: Style.font.caption
                     anchors.verticalCenter: parent.verticalCenter
                   }
-                }
-              }
-
-              // Open DoMi link
-              Text {
-                textFormat: Text.PlainText
-                text: "Open DoMi →"
-                color: doMiMouse.containsMouse
-                  ? Style.hoverStateColor(root.contentForeground, Color.accent)
-                  : Qt.darker(root.contentForeground, 1.5)
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-                font.letterSpacing: 1
-
-                MouseArea {
-                  id: doMiMouse
-                  anchors.fill: parent
-                  hoverEnabled: true
-                  cursorShape: Qt.PointingHandCursor
-                  onClicked: root.openDoMi()
                 }
               }
 
