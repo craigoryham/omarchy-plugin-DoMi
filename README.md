@@ -15,6 +15,24 @@ A time-block management plugin for [Omarchy](https://github.com/omarchy). DoMi l
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4
 - **Backend:** Node.js (Easel palette server, Block Sync)
 
+## Omarchy plugin
+
+The `user.domi-clock` bar widget (`plugin/user.domi-clock/`) and the `domi-launch`
+open-or-focus launcher (`bin/domi-launch`) ship in this repo. Install them with:
+
+```sh
+./install.sh
+```
+
+This symlinks the widget into `~/.config/omarchy/plugins/user.domi-clock` and the
+launcher into `~/.local/bin/domi-launch`, so edits in this repo are live immediately
+(Quickshell hot-reloads QML on save). Then register the widget in
+`~/.config/omarchy/shell.json`: add `{ "id": "user.domi-clock" }` to `bar.layout.center`
+and set `bar.centerAnchor` to `user.domi-clock`. Reload with `omarchy restart shell`.
+
+Launch the app via `domi-launch` (opens in its own workspace, or focuses it if already
+open) or directly at `http://localhost:5173`.
+
 ## Development
 
 ```sh

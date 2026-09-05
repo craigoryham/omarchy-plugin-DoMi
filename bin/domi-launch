@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Open the DoMi web app, or focus it if already open.
+# A fresh instance lands on the smallest unused numeric workspace.
+
+DOMI_URL="http://localhost:5173"
+DOMI_DIR="$HOME/Work/omarchy-plugin-DoMi"
+DOMI_CLASS="chrome-localhost__-Default"
+
+domi_window_addr() {
+  hyprctl clients -j 2>/dev/null \
+    | jq -r --arg cls "$DOMI_CLASS" \
+      '[ .[] | select(.class == $cls) | .address ] | .[0] // empty'
+}
+
+next_free_workspace() {
+  hyprctl workspaces -j 2>/dev/null \
+    | jq -r '[ .[] | select(.id > 0) | .id ] as $used
+              | first( range(1; 201)
+                       | select( . as $n | ( $used | index($n) ) == null ) )'
+}
+
+if ! curl -sf "$DOMI_URL" >/dev/null 2>&1; then
+  ( cd "$DOMI_DIR" && nohup npm run dev -- --host >/tmp/domi-dev.log 2>&1 & )
+  for _ in $(seq 1 20); do
+    sleep 0.5
+    curl -sf "$DOMI_URL" >/dev/null 2>&1 && break
+  done
+fi
+
+existing="$(domi_window_addr)"
+if [ -n "$existing" ]; then
+  exec hyprctl dispatch "hl.dsp.focus({ window = 'address:$existing' })"
+fi
+
+target="$(next_free_workspace)"
+[ -n "$target" ] || target=1
+
+chromium --app="$DOMI_URL" >/dev/null 2>&1 &
+
+for _ in $(seq 1 40); do
+  sleep 0.2
+  addr="$(domi_window_addr)"
+  if [ -n "$addr" ]; then
+    hyprctl dispatch "hl.dsp.window.move({ window = 'address:$addr', workspace = '$target' })"
+    exec hyprctl dispatch "hl.dsp.focus({ window = 'address:$addr' })"
+  fi
+done
+
+exit 1

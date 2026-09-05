@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "user.domi-clock",
+  "name": "DoMi Clock",
+  "version": "1.0.0",
+  "author": "you",
+  "description": "Clock with DoMi agenda sync and MTWTFSS indicator",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "DoMi Clock",
+    "description": "Time + today's DoMi agenda + MTWTFSS day indicator",
+    "category": "Time",
+    "allowMultiple": false
+  }
+}
