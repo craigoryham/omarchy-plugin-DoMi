@@ -12,6 +12,8 @@ interface DayColumnProps {
   onSelectBlock: (id: string | null) => void
   onDrop: (date: string, minuteOffset: number) => void
   onGridClick: (date: string, minuteOffset: number) => void
+  onToggleTask: (taskId: string) => void
+  onRemoveBlock: (id: string) => void
 }
 
 function columnTitle(block: TimeBlock, todos: Todo[]): string {
@@ -38,6 +40,8 @@ export function DayColumn({
   onSelectBlock,
   onDrop,
   onGridClick,
+  onToggleTask,
+  onRemoveBlock,
 }: DayColumnProps) {
   const hourLabels: number[] = []
   for (let h = PLAN_START_HOUR; h <= PLAN_END_HOUR; h++) hourLabels.push(h)
@@ -73,13 +77,16 @@ export function DayColumn({
         const offset = block.startMinute - PLAN_START_HOUR * 60
         const h = block.durationMin / 60 * PLAN_HOUR_HEIGHT
         const todo = todos.find((t) => t.id === block.taskId)
+        const linkedTaskId = todo ? block.taskId : null
         return (
           <div
             key={block.id}
             draggable
             onDragStart={(e) => { e.stopPropagation(); onSelectBlock(block.id) }}
             onClick={(e) => { e.stopPropagation(); onSelectBlock(block.id) }}
-            className={`absolute left-1 right-1 rounded-md px-2 py-1 text-xs text-white overflow-hidden cursor-pointer shadow-sm hover:opacity-90 transition-opacity ${
+            className={`group absolute left-1 right-1 rounded-md text-xs text-white overflow-hidden cursor-pointer shadow-sm hover:opacity-90 transition-opacity ${
+              linkedTaskId ? 'pl-5 pr-1 py-1' : 'px-2 py-1'
+            } ${todo?.completed ? 'opacity-60' : ''} ${
               selectedBlockId === block.id ? 'ring-2 ring-white/70 z-10' : ''
             }`}
             style={{
@@ -89,7 +96,29 @@ export function DayColumn({
             }}
             title={columnTitle(block, todos)}
           >
-            <p className="font-medium truncate">{columnTitle(block, todos)}</p>
+            {linkedTaskId && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleTask(linkedTaskId) }}
+                className={`absolute top-1 left-1 z-20 w-3.5 h-3.5 rounded-full border border-white/80 flex items-center justify-center text-[8px] leading-none transition-opacity ${
+                  todo?.completed ? 'bg-white text-black opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+                title={todo?.completed ? 'Mark incomplete' : 'Mark complete'}
+                aria-label={todo?.completed ? 'Mark incomplete' : 'Mark complete'}
+              >
+                {todo?.completed ? '✓' : ''}
+              </button>
+            )}
+            {linkedTaskId && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onRemoveBlock(block.id) }}
+                className="absolute top-1 right-1 z-20 w-4 h-4 rounded-full bg-black/30 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/50"
+                title="Return to task queue"
+                aria-label="Return to task queue"
+              >
+                ↩
+              </button>
+            )}
+            <p className={`font-medium truncate ${todo?.completed ? 'line-through' : ''}`}>{columnTitle(block, todos)}</p>
             {(h > 30 || block.description || block.meeting) && (
               <p className="opacity-80 text-[10px] truncate">
                 {String(Math.floor(block.startMinute / 60) % 12 || 12)}:{String(block.startMinute % 60).padStart(2, '0')} {Math.floor(block.startMinute / 60) < 12 ? 'AM' : 'PM'}

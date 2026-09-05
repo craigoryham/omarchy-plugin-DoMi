@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import type { Category, Tag, Todo, TimeBlock } from './types'
 import { DEFAULT_CATEGORIES, DEFAULT_TAGS } from './types'
@@ -25,7 +25,16 @@ export default function App() {
   )
   const [tags, setTags] = useLocalStorage<Tag[]>('domi-tags', DEFAULT_TAGS)
   const [blocks, setBlocks] = useLocalStorage<TimeBlock[]>('domi-blocks', [])
-  useBlockExporter(blocks)
+  const exportBlocks = useMemo(
+    () =>
+      blocks.map((b) =>
+        b.taskId
+          ? { ...b, title: todos.find((t) => t.id === b.taskId)?.text ?? b.title }
+          : b
+      ),
+    [blocks, todos]
+  )
+  useBlockExporter(exportBlocks)
   const [filterCategory, setFilterCategory] = useState<string | null>(null)
   const [filterTag, setFilterTag] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
@@ -61,6 +70,31 @@ export default function App() {
       ...b,
       description: typeof b.description === 'string' ? b.description : '',
     })))
+  }
+
+  // Backfill: every plan block should be backed by a task so the Tasks
+  // view is a complete list of everything planned.
+  const orphanBlocks = blocks.filter((b) => !b.taskId)
+  if (orphanBlocks.length > 0) {
+    const backfilled: Todo[] = orphanBlocks.map((b) => ({
+      id: uuidv4(),
+      text: b.title || 'Untitled',
+      description: b.description ?? '',
+      completed: false,
+      categoryId: null,
+      tagIds: [],
+      dueDate: b.date,
+      createdAt: new Date().toISOString(),
+    }))
+    const linkByBlockId = new Map<string, string>()
+    orphanBlocks.forEach((b, i) => linkByBlockId.set(b.id, backfilled[i].id))
+    setTodos((prev) => [...prev, ...backfilled])
+    setBlocks((prev) =>
+      prev.map((b) => {
+        const todoId = linkByBlockId.get(b.id)
+        return todoId ? { ...b, taskId: todoId, title: null } : b
+      })
+    )
   }
 
   const addTodo = (text: string, categoryId: string | null, tagIds: string[], dueDate: string | null, description = '') => {
@@ -122,6 +156,34 @@ export default function App() {
   const addBlock = (block: Omit<TimeBlock, 'id'>) => {
     const newBlock: TimeBlock = { ...block, id: uuidv4() }
     setBlocks((prev) => [...prev, newBlock])
+  }
+
+  const addTaskBlock = (date: string, startMinute: number, text: string) => {
+    const todo: Todo = {
+      id: uuidv4(),
+      text,
+      description: '',
+      completed: false,
+      categoryId: null,
+      tagIds: [],
+      dueDate: date,
+      createdAt: new Date().toISOString(),
+    }
+    const block: TimeBlock = {
+      id: uuidv4(),
+      date,
+      startMinute,
+      durationMin: 60,
+      taskId: todo.id,
+      title: null,
+      description: '',
+      color: '#64748b',
+      meeting: false,
+      recurrence: null,
+    }
+    setTodos((prev) => [todo, ...prev])
+    setBlocks((prev) => [...prev, block])
+    return block.id
   }
 
   const updateBlock = (id: string, patch: Partial<TimeBlock>) => {
@@ -212,6 +274,9 @@ export default function App() {
               onAddBlock={addBlock}
               onUpdateBlock={updateBlock}
               onDeleteBlock={deleteBlock}
+              onAddTaskBlock={addTaskBlock}
+              onToggleTask={toggleTodo}
+              onUpdateTodo={editTodo}
             />
           </div>
         ) : (

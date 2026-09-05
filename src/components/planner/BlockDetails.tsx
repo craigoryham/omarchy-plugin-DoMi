@@ -8,6 +8,7 @@ interface BlockDetailsProps {
   weekLabel: string
   onClose: () => void
   onUpdate: (id: string, patch: Partial<TimeBlock>) => void
+  onUpdateTodo: (id: string, text: string) => void
   onDelete: (id: string) => void
 }
 
@@ -17,7 +18,7 @@ function startTimeInputValue(startMinute: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
-export function BlockDetails({ block, todo, weekLabel, onClose, onUpdate, onDelete }: BlockDetailsProps) {
+export function BlockDetails({ block, todo, weekLabel, onClose, onUpdate, onUpdateTodo, onDelete }: BlockDetailsProps) {
   return (
     <div className="bg-surface-alt rounded-lg p-3 border border-border animate-scale-in">
       <div className="flex items-center justify-between mb-2">
@@ -37,9 +38,12 @@ export function BlockDetails({ block, todo, weekLabel, onClose, onUpdate, onDele
           <label className="block text-xs text-text-muted mb-1">Title</label>
           <input
             type="text"
-            value={block.title || todo?.text || ''}
-            onChange={(e) => onUpdate(block.id, { title: e.target.value })}
-            disabled={!!block.taskId}
+            value={block.taskId ? (todo?.text ?? '') : (block.title ?? '')}
+            onChange={(e) =>
+              block.taskId
+                ? onUpdateTodo(block.taskId, e.target.value)
+                : onUpdate(block.id, { title: e.target.value })
+            }
             placeholder="Title"
             className="w-full px-2 py-1 rounded bg-surface border border-border-light text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
@@ -103,9 +107,11 @@ export function BlockDetails({ block, todo, weekLabel, onClose, onUpdate, onDele
         </div>
         <button
           onClick={() => onDelete(block.id)}
-          className="w-full mt-2 px-3 py-1.5 bg-danger text-white text-xs font-medium rounded-lg hover:opacity-90 transition-opacity"
+          className={`w-full mt-2 px-3 py-1.5 text-white text-xs font-medium rounded-lg hover:opacity-90 transition-opacity ${
+            block.taskId ? 'bg-primary' : 'bg-danger'
+          }`}
         >
-          Delete block
+          {block.taskId ? 'Return to task queue' : 'Delete block'}
         </button>
       </div>
     </div>

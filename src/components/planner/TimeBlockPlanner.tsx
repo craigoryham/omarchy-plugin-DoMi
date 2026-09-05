@@ -15,6 +15,9 @@ interface TimeBlockPlannerProps {
   onAddBlock: (block: Omit<TimeBlock, 'id'>) => void
   onUpdateBlock: (id: string, patch: Partial<TimeBlock>) => void
   onDeleteBlock: (id: string) => void
+  onAddTaskBlock: (date: string, startMinute: number, text: string) => string
+  onToggleTask: (id: string) => void
+  onUpdateTodo: (id: string, text: string) => void
 }
 
 type View = 'day' | 'week' | 'month'
@@ -36,6 +39,9 @@ export function TimeBlockPlanner({
   onAddBlock,
   onUpdateBlock,
   onDeleteBlock,
+  onAddTaskBlock,
+  onToggleTask,
+  onUpdateTodo,
 }: TimeBlockPlannerProps) {
   const [view, setView] = useState<View>('week')
   const [cursor, setCursor] = useState<Date>(() => new Date())
@@ -98,9 +104,15 @@ export function TimeBlockPlanner({
   }, [view, cursor])
 
   // -------- block creation --------
+  const snapStartMinute = (minuteOffset: number) => {
+    const raw = PLAN_START_HOUR * 60 + minuteOffset
+    const snapped = Math.round(raw / 30) * 30
+    return Math.min(Math.max(snapped, PLAN_START_HOUR * 60), PLAN_END_HOUR * 60 - 60)
+  }
+
   const handleDrop = (date: string, minuteOffset: number) => {
     if (!draggingTaskId) return
-    const startMinute = PLAN_START_HOUR * 60 + minuteOffset
+    const startMinute = snapStartMinute(minuteOffset)
     const block: Omit<TimeBlock, 'id'> = {
       date,
       startMinute,
@@ -134,19 +146,8 @@ export function TimeBlockPlanner({
   }
 
   const handleGridClick = (date: string, minuteOffset: number) => {
-    const startMinute = PLAN_START_HOUR * 60 + minuteOffset
-    const block: Omit<TimeBlock, 'id'> = {
-      date,
-      startMinute,
-      durationMin: 60,
-      taskId: null,
-      title: 'New block',
-      description: '',
-      color: '#64748b',
-      meeting: false,
-      recurrence: null,
-    }
-    onAddBlock(block)
+    const id = onAddTaskBlock(date, snapStartMinute(minuteOffset), 'New task')
+    setSelectedBlockId(id)
   }
 
   const handleOpenDay = (date: string) => {
@@ -247,6 +248,8 @@ export function TimeBlockPlanner({
               onSelectBlock={setSelectedBlockId}
               onDrop={handleDrop}
               onGridClick={handleGridClick}
+              onToggleTask={onToggleTask}
+              onRemoveBlock={onDeleteBlock}
             />
           )}
           {view === 'day' && (
@@ -273,6 +276,8 @@ export function TimeBlockPlanner({
                 onSelectBlock={setSelectedBlockId}
                 onDrop={handleDrop}
                 onGridClick={handleGridClick}
+                onToggleTask={onToggleTask}
+                onRemoveBlock={onDeleteBlock}
               />
             </div>
           )}
@@ -301,6 +306,7 @@ export function TimeBlockPlanner({
               weekLabel={blockWeekday}
               onClose={() => setSelectedBlockId(null)}
               onUpdate={onUpdateBlock}
+              onUpdateTodo={onUpdateTodo}
               onDelete={onDeleteBlock}
             />
           ) : (

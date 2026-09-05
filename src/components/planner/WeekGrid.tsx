@@ -15,6 +15,8 @@ interface WeekGridProps {
   onSelectBlock: (id: string | null) => void
   onDrop: (date: string, minuteOffset: number) => void
   onGridClick: (date: string, minuteOffset: number) => void
+  onToggleTask: (taskId: string) => void
+  onRemoveBlock: (id: string) => void
 }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
@@ -31,6 +33,8 @@ export function WeekGrid({
   onSelectBlock,
   onDrop,
   onGridClick,
+  onToggleTask,
+  onRemoveBlock,
 }: WeekGridProps) {
   const hourLabels: number[] = []
   for (let h = PLAN_START_HOUR; h <= PLAN_END_HOUR; h++) hourLabels.push(h)
@@ -105,6 +109,8 @@ export function WeekGrid({
                 onSelectBlock={onSelectBlock}
                 onDrop={onDrop}
                 onGridClick={onGridClick}
+                onToggleTask={onToggleTask}
+                onRemoveBlock={onRemoveBlock}
               />
             </div>
           )
