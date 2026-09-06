@@ -40,6 +40,58 @@ load tasks into a per-**week** list that the time-block planner works from.
 - `unplannedTodos` derivation in `TimeBlockPlanner.tsx` (`!completed` and
   `!scheduledTaskIds.has(id)`) is the shape the weekly filter replaces.
 
+## 7 Day view + rename "Week" to "Work Week"
+
+The current 5-day "Week" view is really a work week (Mon–Fri only); rename it
+to **Work Week** and add a new **7 Day** view showing Mon–Sun.
+
+### Recommended design
+
+- `TimeBlockPlanner`: extend the `View` union with a 7-day variant; the toggle
+  becomes Day | Work Week | 7 Day | Month; the 7-day header title spans
+  Monday–Sunday; `focusedDay` clamp parameterizes
+  (`Math.min(dayCount - 1, …)`).
+- `WeekGrid`: add a `dayCount` prop (5 | 7) and extend `WEEKDAYS` to
+  ['Mon'…'Sun']. The two hardcoded `grid-cols-[40px_1fr_1fr_1fr_1fr_1fr]`
+  templates become a dynamic inline `gridTemplateColumns` (Tailwind can't
+  compose dynamic class names). The container already has `overflow-x-auto`
+  as the narrow-screen fallback.
+- Drag/drop, grid-click, task blocks, and selection are per-`DayColumn` and
+  count-agnostic — no changes needed there.
+
+### Open questions (answer these before starting)
+
+1. **Column width**: 7 columns + the 220px sidebar gets cramped — accept
+   narrower columns (with horizontal scroll fallback), or let 7 Day span full
+   width above the sidebar.
+2. **Weekend styling**: dim Sat/Sun headers (like out-of-month days in
+   MonthGrid) or treat them identically to weekdays.
+3. **Default view**: keep Work Week as the default next launch, or make 7 Day
+   the default (view state currently resets on tab switch).
+
+### Prior work this builds on
+
+- `WeekGrid.tsx` — single component renders `days` from `WEEKDAYS`; the only
+  5-day assumptions are the label array and the two grid-template classes.
+- `TimeBlockPlanner` view toggle + header title (already renders a Mon–Fri
+  range string for the week view).
+
+## Rename "Plan" page/tab to "Time Block"
+
+User-facing label parity with the time-block widget; no behavior change.
+
+### Recommended design
+
+- **Minimal**: change the single label string at `src/components/TabBar.tsx:9`
+  (`{ key: 'plan' as const, label: 'Plan' }` → `'Time Block'`); nothing else
+  renders the word "Plan".
+- **Consistency pass** (rec, ~5 lines): also rename the internal key
+  `'plan'` → `'timeblock'` across `ActiveTab` (`src/App.tsx:16`), the
+  `activeTab === 'plan'` conditional (`src/App.tsx:279`), and TabBar's prop
+  types + key tuple. Cosmetic — keeps identifiers honest with the UI.
+- No other user-facing "Plan" strings exist in the app; the QML widget is
+  unaffected.
+
 ## iCal export / calendar feed
 
 Push DoMi time blocks out as an iCalendar feed so calendar apps can consume them.
