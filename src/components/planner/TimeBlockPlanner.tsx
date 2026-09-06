@@ -44,6 +44,15 @@ function fmtMonthDay(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+const VIEW_OPTIONS: View[] = ['day', 'workweek', 'week7', 'month']
+
+const VIEW_STORAGE_KEY = 'domi-view-mode'
+
+function loadSavedView(): View {
+  const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(VIEW_STORAGE_KEY) : null
+  return (VIEW_OPTIONS as string[]).includes(saved ?? '') ? (saved as View) : 'workweek'
+}
+
 export function TimeBlockPlanner({
   blocks,
   todos,
@@ -61,8 +70,11 @@ export function TimeBlockPlanner({
   onSetDescription,
   onDeleteTodo,
 }: TimeBlockPlannerProps) {
-  const [view, setView] = useState<View>('workweek')
+  const [view, setView] = useState<View>(loadSavedView)
   const [cursor, setCursor] = useState<Date>(() => new Date())
+  useEffect(() => {
+    localStorage.setItem(VIEW_STORAGE_KEY, view)
+  }, [view])
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null)
@@ -252,7 +264,7 @@ export function TimeBlockPlanner({
       {/* View toggle */}
       <div className="flex justify-center mb-4">
         <div className="inline-flex rounded-lg bg-surface-alt border border-border p-0.5">
-          {(['day', 'workweek', 'week7', 'month'] as View[]).map((v) => (
+          {VIEW_OPTIONS.map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
