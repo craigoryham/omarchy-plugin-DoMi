@@ -168,3 +168,91 @@ ever reaches Google, they get interpreted in that calendar's timezone.
   (`src/App.tsx` exportBlocks memo) — SUMMARY is ready to use
 - block-sync pattern (zero-dep `node:http`, CORS, in-place state writes under
   `~/.local/state/domi/`) extends naturally: add one endpoint + one writer
+
+## Notes tab — blog-style reading space for task + week notes
+
+A third tab (**Notes**) that renders notes as blog-style entries, filterable
+by tags. Two note sources feed it: **task notes** (a task's `description`)
+and the per-week **journal notes** introduced by the Week in Preview / Week
+Ahead views below.
+
+### Recommended design
+
+- **Tab**: extend `ActiveTab` and `TabBar` (`src/components/TabBar.tsx`) with
+  `notes`; App renders a new NotesView at the blog-friendly max width.
+- **Task notes**: every todo with a non-empty `description` renders as an
+  entry — title = task text, body = description, tag chips from `tagIds`,
+  date = `createdAt`. Completed tasks included (notes outlive task state —
+  the archive feel).
+- **Week notes**: entries from the week journal notes (weekly views entry
+  below) titled "Week of <Monday>".
+- **Tag filter bar**: multi-select chips using the existing Tag set/colors
+  (`DEFAULT_TAGS`, `domi-tags`). Tasks tab has no filter UI today — build it
+  as a reusable component (candidate for later reuse in Tasks).
+- **Ordering**: newest first via `createdAt` (Todo has no `updatedAt`).
+- Clicking a task note jumps to the task (Tasks tab + select).
+
+### Open questions (answer these before starting)
+
+1. **Journal note tags**: week notes get a tag picker too (single filterable
+   feed) vs a separate untagged section above the task-note feed.
+2. **Sequencing**: ship Notes with task notes first (rec — the tab is useful
+   immediately) and let week notes join later, or build the weekly views
+   first and launch Notes complete.
+3. **Entry body**: plain text with preserved whitespace (rec — descriptions
+   are plain strings today) vs markdown rendering.
+
+### Prior work this builds on
+
+- `Todo.description` + `tagIds` (`src/types.ts`) — the note content and the
+  filter dimension already exist.
+- TodoItem's expandable description (`src/components/TodoItem.tsx`) is the
+  inline precedent; NotesView is the dedicated reading surface.
+
+## Week in Preview + Week Ahead — weekly planning views
+
+Two week-scoped planning surfaces for the queue, both with a per-week
+journal note:
+
+- **Week in Preview** — the current week: review the loaded queue and the
+  week's journal note.
+- **Week Ahead** — the next week: load tasks from the master task listing
+  into next week's queue ahead of the Monday rollover.
+
+### Recommended design
+
+- **Data**: new `domi-week-notes` localStorage key — `Record<weekKey,
+  string>`; `WeeklyPlans` stays untouched (queues already key by Monday
+  `dateKey`). Journal note = one textarea per week, autosave on blur.
+- **Queue machinery**: generalize `addTasksToWeek`/`toggleTaskInWeek`
+  (`src/App.tsx`) from the hardcoded `currentWeekKey` to take a target
+  weekKey; the TodoItem "Add to this week" toggle becomes "add to <which
+  week>" depending on the active surface. Week rollover carry-over already
+  ships.
+- **Placement — build both versions on branches, pick the winner** (same
+  A/B pattern as the queue rail experiment):
+  - **Version A — new tab(s)**: a "Week" tab (or two) in the TabBar — master
+    task list left, that week's loaded queue right, journal note section,
+    week switcher.
+  - **Version B — planner views**: week-scoped views inside the Time Block
+    planner; the rail queue follows the focused week instead of always the
+    current week.
+- Both versions: list that week's members (dimmed completed at the bottom,
+  matching the shipped rail).
+
+### Open questions (answer these before starting)
+
+1. **One tab or two**: a single "Week" tab with a Preview/Ahead switcher vs
+   separate tabs for each view.
+2. **Planner queue scope** (carried over from the shipped weekly entry):
+   should the Time Block rail follow the focused week in general, or only
+   inside the new week views?
+3. **Journal note editor**: plain textarea (rec) vs markdown.
+
+### Prior work this builds on
+
+- Weekly queue machinery just shipped (`621f730`): `WeeklyPlans` storage,
+  bootstrap/rollover seed, `toggleTaskInWeek`, deleteTodo pruning, the
+  `queueTodoIds`-driven rail with dimmed completed section.
+- `startOfWeek`/`dateKey` (`src/components/planner/date.ts`) — week keys.
+- The A/B branch-and-pick workflow from the queue rail experiment.
