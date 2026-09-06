@@ -256,3 +256,26 @@ journal note:
   `queueTodoIds`-driven rail with dimmed completed section.
 - `startOfWeek`/`dateKey` (`src/components/planner/date.ts`) — week keys.
 - The A/B branch-and-pick workflow from the queue rail experiment.
+
+## Confirmation for task deletion
+
+Deleting is currently instant in four places — TodoItem's hover trash, the
+planner rail's "Delete task" button, TagManager's tag delete, and
+BlockDetails — and `App.deleteTodo` cascades: the task's time blocks are
+removed and its week-queue memberships are pruned. A confirmation step
+guards against accidental loss.
+
+### Open questions (answer these before starting)
+
+1. **UX**: inline two-step (trash click → red "Confirm?" that auto-resets
+   after ~4s), modal dialog spelling out the cascade ("its time blocks are
+   removed too"), or delete-now + undo toast holding the removed data ~5s.
+2. **Scope**: tasks only, or also tags (deletion strips the tag from every
+   task) and blocks.
+
+### Prior work this builds on
+
+- `deleteTodo` (`src/App.tsx`) already owns the full cascade (todos, blocks,
+  weekly plans) — an undo variant would snapshot its inputs.
+- Delete buttons in `TodoItem.tsx`, `TodoDetails.tsx`, `TagManager.tsx`,
+  `BlockDetails.tsx` are all one-line `onClick` call sites.
