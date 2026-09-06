@@ -351,7 +351,8 @@ export function TimeBlockPlanner({
             />
           )}
           {view === 'day' && (
-            <div className="grid grid-cols-[40px_1fr] border border-border rounded-lg overflow-hidden">
+            <div className="max-w-sm mx-auto">
+              <div className="grid grid-cols-[40px_1fr] border border-border rounded-lg overflow-hidden">
               <div className="relative bg-surface-alt/50">
                 {hourLabels.map((h) => (
                   <span
@@ -377,6 +378,7 @@ export function TimeBlockPlanner({
                 onToggleTask={onToggleTask}
                 onRemoveBlock={onDeleteBlock}
               />
+            </div>
             </div>
           )}
           {view === 'month' && (
