@@ -1,4 +1,4 @@
-type TabKey = 'tasks' | 'timeblock' | 'notes' | 'preview' | 'ahead'
+type TabKey = 'tasks' | 'timeblock' | 'notes'
 
 interface TabBarProps {
   active: TabKey
@@ -10,8 +10,6 @@ export function TabBar({ active, onChange }: TabBarProps) {
     { key: 'tasks', label: 'Tasks' },
     { key: 'timeblock', label: 'Time Block' },
     { key: 'notes', label: 'Notes' },
-    { key: 'preview', label: 'Preview' },
-    { key: 'ahead', label: 'Ahead' },
   ]
 
   return (
