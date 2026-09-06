@@ -1,7 +1,7 @@
 import type { Todo, Category, Tag, TimeBlock } from '../../types'
 import { PLAN_START_HOUR, PLAN_END_HOUR, PLAN_HOUR_HEIGHT } from '../../types'
 import { dateKey } from './date'
-import { DayColumn } from './DayColumn'
+import { DayColumn, type Density } from './DayColumn'
 
 interface WeekGridProps {
   weekStart: Date
@@ -13,6 +13,7 @@ interface WeekGridProps {
   selectedBlockId: string | null
   todayKey: string
   focusedDay: number
+  density?: Density
   onSelectBlock: (id: string | null) => void
   onDrop: (date: string, minuteOffset: number) => void
   onGridClick: (date: string, minuteOffset: number) => void
@@ -36,6 +37,7 @@ export function WeekGrid({
   selectedBlockId,
   todayKey,
   focusedDay,
+  density = 'compact',
   onSelectBlock,
   onDrop,
   onGridClick,
@@ -46,11 +48,14 @@ export function WeekGrid({
   for (let h = PLAN_START_HOUR; h <= PLAN_END_HOUR; h++) hourLabels.push(h)
   const totalHeight = (PLAN_END_HOUR - PLAN_START_HOUR) * PLAN_HOUR_HEIGHT
 
-  const days = WEEKDAYS.slice(0, dayCount).map((_, i) => {
+  const days: Date[] = []
+  for (let i = 0; i < dayCount; i++) {
     const d = new Date(weekStart)
     d.setDate(weekStart.getDate() + i)
-    return d
-  })
+    days.push(d)
+  }
+
+  const weekdayLabel = (d: Date) => WEEKDAYS[(d.getDay() + 6) % 7]
 
   return (
     <div className="border border-border rounded-lg overflow-hidden overflow-x-auto">
@@ -67,7 +72,7 @@ export function WeekGrid({
               className={`py-2 text-center border-l border-border-light ${isFocused ? 'bg-primary/10' : ''}`}
             >
               <div className={`text-[10px] uppercase tracking-wide ${isFocused ? 'text-primary font-semibold' : 'text-text-muted'}`}>
-                {WEEKDAYS[i]}
+                {weekdayLabel(d)}
               </div>
               <div
                 className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-semibold ${
@@ -112,6 +117,7 @@ export function WeekGrid({
                 tags={tags}
                 selectedBlockId={selectedBlockId}
                 isToday={key === todayKey}
+                density={density}
                 onSelectBlock={onSelectBlock}
                 onDrop={onDrop}
                 onGridClick={onGridClick}

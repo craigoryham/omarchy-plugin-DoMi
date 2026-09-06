@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react'
 import type { Todo, Category, Tag, TimeBlock, WeeklyPlans, WeekNotes } from '../../types'
 import { addDays, addMonths, dateKey, startOfMonth, startOfWeek } from './date'
 import { WeekGrid } from './WeekGrid'
-import { DayColumn } from './DayColumn'
 import { MonthGrid } from './MonthGrid'
 import { BlockDetails } from './BlockDetails'
 import { TodoDetails } from './TodoDetails'
 import { WeekView } from '../WeekView'
-import { PLAN_START_HOUR, PLAN_END_HOUR, PLAN_HOUR_HEIGHT } from '../../types'
+import { PLAN_START_HOUR, PLAN_END_HOUR } from '../../types'
 
 interface TimeBlockPlannerProps {
   blocks: TimeBlock[]
@@ -111,8 +110,9 @@ export function TimeBlockPlanner({
   const todayKey = dateKey(new Date())
   const weekStart = startOfWeek(cursor)
   const monthAnchor = startOfMonth(cursor)
-  const weekDayCount = view === 'week7' ? 7 : 5
+  const weekDayCount = view === 'week7' ? 7 : view === 'day' ? 1 : 5
   const focusedDay = Math.min(weekDayCount - 1, (cursor.getDay() + 6) % 7)
+  const density = view === 'day' ? 'full' : view === 'week7' ? 'minimal' : 'compact'
 
   const hourLabels: number[] = []
   for (let h = PLAN_START_HOUR; h <= PLAN_END_HOUR; h++) hourLabels.push(h)
@@ -332,9 +332,9 @@ export function TimeBlockPlanner({
       <div>
         {/* Main view */}
         <div>
-          {(view === 'workweek' || view === 'week7') && (
+          {(view === 'workweek' || view === 'week7' || view === 'day') && (
             <WeekGrid
-              weekStart={weekStart}
+              weekStart={view === 'day' ? cursor : weekStart}
               dayCount={weekDayCount}
               blocks={blocks}
               todos={todos}
@@ -343,43 +343,13 @@ export function TimeBlockPlanner({
               selectedBlockId={selectedBlockId}
               todayKey={todayKey}
               focusedDay={focusedDay}
+              density={density}
               onSelectBlock={selectBlock}
               onDrop={handleDrop}
               onGridClick={handleGridClick}
               onToggleTask={onToggleTask}
               onRemoveBlock={onDeleteBlock}
             />
-          )}
-          {view === 'day' && (
-            <div className="max-w-sm mx-auto">
-              <div className="grid grid-cols-[40px_1fr] border border-border rounded-lg overflow-hidden">
-              <div className="relative bg-surface-alt/50">
-                {hourLabels.map((h) => (
-                  <span
-                    key={h}
-                    className="absolute right-1 text-[10px] text-text-muted"
-                    style={{ top: (h - PLAN_START_HOUR) * PLAN_HOUR_HEIGHT - 6 }}
-                  >
-                    {h % 12 === 0 ? '12' : h % 12} {h < 12 ? 'AM' : 'PM'}
-                  </span>
-                ))}
-              </div>
-              <DayColumn
-                date={dateKey(cursor)}
-                blocks={blocks.filter((b) => b.date === dateKey(cursor))}
-                todos={todos}
-                categories={categories}
-                tags={tags}
-                selectedBlockId={selectedBlockId}
-                isToday={true}
-                onSelectBlock={selectBlock}
-                onDrop={handleDrop}
-                onGridClick={handleGridClick}
-                onToggleTask={onToggleTask}
-                onRemoveBlock={onDeleteBlock}
-              />
-            </div>
-            </div>
           )}
           {view === 'month' && (
             <MonthGrid
