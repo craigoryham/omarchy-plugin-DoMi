@@ -5,6 +5,7 @@ import { DayColumn } from './DayColumn'
 
 interface WeekGridProps {
   weekStart: Date
+  dayCount: number
   blocks: TimeBlock[]
   todos: Todo[]
   categories: Category[]
@@ -19,10 +20,15 @@ interface WeekGridProps {
   onRemoveBlock: (id: string) => void
 }
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+const gridTemplate = (dayCount: number) => ({
+  gridTemplateColumns: `40px repeat(${dayCount}, minmax(0, 1fr))`,
+})
 
 export function WeekGrid({
   weekStart,
+  dayCount,
   blocks,
   todos,
   categories,
@@ -40,7 +46,7 @@ export function WeekGrid({
   for (let h = PLAN_START_HOUR; h <= PLAN_END_HOUR; h++) hourLabels.push(h)
   const totalHeight = (PLAN_END_HOUR - PLAN_START_HOUR) * PLAN_HOUR_HEIGHT
 
-  const days = WEEKDAYS.map((_, i) => {
+  const days = WEEKDAYS.slice(0, dayCount).map((_, i) => {
     const d = new Date(weekStart)
     d.setDate(weekStart.getDate() + i)
     return d
@@ -49,7 +55,7 @@ export function WeekGrid({
   return (
     <div className="border border-border rounded-lg overflow-hidden overflow-x-auto">
       {/* Day headers */}
-      <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr_1fr] border-b border-border bg-surface-alt/50">
+      <div className="grid border-b border-border bg-surface-alt/50" style={gridTemplate(dayCount)}>
         <div className="py-2" />
         {days.map((d, i) => {
           const key = dateKey(d)
@@ -76,7 +82,7 @@ export function WeekGrid({
       </div>
 
       {/* Timeline body */}
-      <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr_1fr] select-none" style={{ height: totalHeight }}>
+      <div className="grid select-none" style={{ height: totalHeight, ...gridTemplate(dayCount) }}>
         {/* Hour labels */}
         <div className="relative">
           {hourLabels.map((h) => (

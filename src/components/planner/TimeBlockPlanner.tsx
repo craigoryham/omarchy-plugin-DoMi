@@ -26,7 +26,14 @@ interface TimeBlockPlannerProps {
   onDeleteTodo: (id: string) => void
 }
 
-type View = 'day' | 'week' | 'month'
+type View = 'day' | 'workweek' | 'week7' | 'month'
+
+const VIEW_LABELS: Record<View, string> = {
+  day: 'Day',
+  workweek: 'Work Week',
+  week7: '7 Day',
+  month: 'Month',
+}
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -54,7 +61,7 @@ export function TimeBlockPlanner({
   onSetDescription,
   onDeleteTodo,
 }: TimeBlockPlannerProps) {
-  const [view, setView] = useState<View>('week')
+  const [view, setView] = useState<View>('workweek')
   const [cursor, setCursor] = useState<Date>(() => new Date())
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
@@ -75,6 +82,8 @@ export function TimeBlockPlanner({
   const todayKey = dateKey(new Date())
   const weekStart = startOfWeek(cursor)
   const monthAnchor = startOfMonth(cursor)
+  const weekDayCount = view === 'week7' ? 7 : 5
+  const focusedDay = Math.min(weekDayCount - 1, (cursor.getDay() + 6) % 7)
 
   const hourLabels: number[] = []
   for (let h = PLAN_START_HOUR; h <= PLAN_END_HOUR; h++) hourLabels.push(h)
@@ -93,7 +102,7 @@ export function TimeBlockPlanner({
   // -------- navigation --------
   const navigate = (dir: -1 | 1) => {
     if (view === 'day') setCursor((c) => addDays(c, dir))
-    else if (view === 'week') setCursor((c) => addDays(c, dir * 7))
+    else if (view === 'workweek' || view === 'week7') setCursor((c) => addDays(c, dir * 7))
     else {
       const m = addMonths(cursor, dir)
       setCursor(m)
@@ -118,8 +127,8 @@ export function TimeBlockPlanner({
       else if (e.key === 't') goToday()
       else if (e.key === 'm') setView('month')
       else if (e.key === 'd') setView('day')
-      else if (e.key === 'w') setView('week')
-      else if (view === 'week' && e.key >= '1' && e.key <= '5') selectWeekday(Number(e.key))
+      else if (e.key === 'w') setView('workweek')
+      else if ((view === 'workweek' || view === 'week7') && e.key >= '1' && e.key <= String(weekDayCount)) selectWeekday(Number(e.key))
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -185,21 +194,21 @@ export function TimeBlockPlanner({
   }
   const unplannedTodos = todos.filter((t) => !t.completed && !scheduledTaskIds.has(t.id))
 
+  const isCurrent = view === 'month'
+    ? cursor.getMonth() === new Date().getMonth() && cursor.getFullYear() === new Date().getFullYear()
+    : dateKey(cursor) === todayKey
+
   // -------- header label --------
   let title = ''
   if (view === 'day') {
     title = fmtMonthDay(cursor)
-  } else if (view === 'week') {
+  } else if (view === 'workweek' || view === 'week7') {
     const monday = startOfWeek(cursor)
-    const friday = addDays(monday, 4)
-    title = `${fmtMonthDay(monday)} — ${fmtMonthDay(friday)}, ${monday.getFullYear()}`
+    const last = addDays(monday, view === 'week7' ? 6 : 4)
+    title = `${fmtMonthDay(monday)} — ${fmtMonthDay(last)}, ${monday.getFullYear()}`
   } else {
     title = `${MONTH_NAMES[cursor.getMonth()]} ${cursor.getFullYear()}`
   }
-
-  const isCurrent = view === 'month'
-    ? cursor.getMonth() === new Date().getMonth() && cursor.getFullYear() === new Date().getFullYear()
-    : dateKey(cursor) === todayKey
 
   // weekday label for the selected block
   const blockWeekday = selectedBlock
@@ -241,15 +250,15 @@ export function TimeBlockPlanner({
       {/* View toggle */}
       <div className="flex justify-center mb-4">
         <div className="inline-flex rounded-lg bg-surface-alt border border-border p-0.5">
-          {(['day', 'week', 'month'] as View[]).map((v) => (
+          {(['day', 'workweek', 'week7', 'month'] as View[]).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 view === v ? 'bg-primary text-white' : 'text-text-muted hover:text-text'
               }`}
             >
-              {v}
+              {VIEW_LABELS[v]}
             </button>
           ))}
         </div>
@@ -258,16 +267,17 @@ export function TimeBlockPlanner({
       <div className="grid md:grid-cols-[1fr_220px] gap-4">
         {/* Main view */}
         <div>
-          {view === 'week' && (
+          {(view === 'workweek' || view === 'week7') && (
             <WeekGrid
               weekStart={weekStart}
+              dayCount={weekDayCount}
               blocks={blocks}
               todos={todos}
               categories={categories}
               tags={tags}
               selectedBlockId={selectedBlockId}
               todayKey={todayKey}
-              focusedDay={Math.min(4, Math.max(0, cursor.getDay() - 1))}
+              focusedDay={focusedDay}
               onSelectBlock={selectBlock}
               onDrop={handleDrop}
               onGridClick={handleGridClick}

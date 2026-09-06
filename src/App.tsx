@@ -13,7 +13,7 @@ import { TagManager } from './components/TagManager'
 import { TimeBlockPlanner } from './components/planner/TimeBlockPlanner'
 
 type FilterStatus = 'all' | 'active' | 'completed'
-type ActiveTab = 'tasks' | 'plan'
+type ActiveTab = 'tasks' | 'timeblock'
 
 export default function App() {
   const { theme, cycle, paletteThemeName } = useTheme()
@@ -276,7 +276,7 @@ export default function App() {
         </div>
 
         {/* Planner view */}
-        {activeTab === 'plan' ? (
+        {activeTab === 'timeblock' ? (
           <div className="mt-6 animate-fade-in">
             <TimeBlockPlanner
               blocks={blocks}
