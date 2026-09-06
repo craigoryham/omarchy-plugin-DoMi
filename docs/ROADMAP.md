@@ -92,6 +92,68 @@ User-facing label parity with the time-block widget; no behavior change.
 - No other user-facing "Plan" strings exist in the app; the QML widget is
   unaffected.
 
+## POMO skirmish integration (time block → POMO timer)
+
+A pink pomo button on every time block in the planner starts a **POMO
+skirmish**: a custom-interval session sequence sized to the block's length,
+auto-chained (Auto Mode). First cross-repo feature — POMO-side work
+(`omarchy-plugin-POMO`) is the prerequisite. S/M/L default pomodoros are
+untouched; skirmish is an isolated custom phase, not a POMO level.
+
+### Interval math (computed in DoMi from block `durationMin`)
+
+- Sessions `N = max(1, floor(durationMin / 30))`, break fixed at 5m,
+  `focusMin = (durationMin − 5·N) / N` (rounded, slack lands in the last
+  session). The skirmish fills the block exactly; clean multiples of 30
+  naturally produce 25/5 — a 60-min block → exactly 2 × (25m focus + 5m
+  break), a 70-min block → 2 × (30m + 5m).
+
+### Recommended design
+
+**POMO side (`omarchy-plugin-POMO`, prerequisite):**
+- Add `IpcHandler` (target `user.POMO`) in `BarWidget.qml` with
+  `skirmish(focusMin, breakMin, count, label)`: run the explicit intervals
+  auto-chained (same semantics as `autoAdvance`), count down the session
+  budget, then return to idle. S/M/L modes, their settings, and idle-pill
+  behavior stay exactly as-is.
+- **Lighter break handling**: planner-started skirmishes skip the enforced
+  break gate (that gate remains POMO's always-on invariant only for default
+  pomodoros). Skirmish breaks are lightweight — pill shows the break
+  countdown, `notify-send` at transitions, no blocking dialog.
+- Verified invocation (`omarchy-shell:59` wraps it with a 2s timeout):
+  `qs ipc -n -p "$OMARCHY_PATH/shell" call -- user.POMO skirmish <focusMin> <breakMin> <count> "<label>"`
+
+**DoMi side:**
+- `server/block-sync.mjs`: `POST /pomo/skirmish {blockId}` → reads blocks.json,
+  computes the intervals, spawns the `qs ipc` call (child_process), returns the
+  computed plan.
+- `src/components/planner/BlockDetails.tsx`: pink "Start POMO skirmish — 2 ×
+  25m + 5m" button showing the computed plan; pink = `#F7768E` (POMO pill
+  brand color).
+- `src/components/planner/DayColumn.tsx` grid chips: small pink pomo glyph in
+  the existing hover affordance row (same pattern as the toggle/× buttons).
+- Phase 2 (optional): QML panel agenda rows call the same `qs ipc` via
+  `Process` — no server needed.
+
+### Open questions (answer these before starting)
+
+1. **Stats logging**: do skirmish focus minutes log into POMO's Today/Total
+   buckets (they're real focus minutes), or stay out of the default stats?
+2. **Feedback in DoMi**: fire-and-forget v1 (POMO pill shows the countdown) —
+   rec — or blocks show a "running" state (requires POMO publishing state
+   somewhere DoMi can read), or do blocks show skirmish progress?
+
+### Prior work this builds on
+
+- `qs ipc call` path verified from `omarchy-shell` (`qs ipc -n -p
+  "$OMARCHY_PATH/shell" call -- …`), and `omarchy-shell shell toggle
+  user.POMO` proves cross-plugin IPC works.
+- POMO engine already has auto-chaining semantics (`autoAdvance`) and a
+  verified restart/IPC workflow (`omarchy restart shell`,
+  `omarchy-shell shell listPlugins | grep POMO`).
+- DoMi: `durationMin` on every block, block-sync endpoint precedent, and the
+  hover-button pattern in `DayColumn.tsx`.
+
 ## iCal export / calendar feed
 
 Push DoMi time blocks out as an iCalendar feed so calendar apps can consume them.
