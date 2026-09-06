@@ -49,7 +49,7 @@ export function WeekView({ offset, todos, categories, tags, weeklyPlans, weekNot
         </h2>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         {/* Master task list */}
         <div className="bg-surface rounded-xl shadow-md border border-border p-4">
           <div className="flex items-center justify-between mb-2">
