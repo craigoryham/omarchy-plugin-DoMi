@@ -216,7 +216,8 @@ export function TimeBlockPlanner({
     : ''
 
   return (
-    <div className="bg-surface rounded-xl shadow-md border border-border p-4">
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-4 lg:items-start">
+      <div className="bg-surface rounded-xl shadow-md border border-border p-4">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <button
@@ -361,36 +362,36 @@ export function TimeBlockPlanner({
               <p className="text-xs text-text-muted">Select a block or task to edit details.</p>
             </div>
           )}
-
-          {/* Unplanned todos to drag */}
-          <div className="bg-surface-alt rounded-lg p-3 border border-border">
-            <h4 className="text-sm font-semibold text-text mb-2">Drag a task to schedule</h4>
-            <div className="space-y-1.5 max-h-52 overflow-y-auto">
-              {unplannedTodos.length === 0 && (
-                <p className="text-xs text-text-muted">All tasks scheduled. Nice!</p>
-              )}
-              {unplannedTodos.map((todo) => (
-                <div
-                  key={todo.id}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/plain', todo.id)
-                    setDraggingTaskId(todo.id)
-                  }}
-                  onClick={() => selectTodo(todo.id)}
-                  className={`px-2.5 py-1.5 bg-surface rounded-md border text-sm text-text flex items-center gap-2 hover:shadow-sm cursor-pointer ${
-                    selectedTodoId === todo.id
-                      ? 'border-primary ring-1 ring-primary/40 cursor-grab'
-                      : 'border-border cursor-grab hover:border-primary/40'
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForTodo(todo) }} />
-                  <span className="truncate">{todo.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </aside>
+      </div>
+
+      {/* Task queue rail — outside the planner card */}
+      <div className="mt-4 lg:mt-0 bg-surface rounded-xl shadow-md border border-border p-4 lg:sticky lg:top-4">
+        <h4 className="text-sm font-semibold text-text mb-2">Drag a task to schedule</h4>
+        <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
+          {unplannedTodos.length === 0 && (
+            <p className="text-xs text-text-muted">All tasks scheduled. Nice!</p>
+          )}
+          {unplannedTodos.map((todo) => (
+            <div
+              key={todo.id}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', todo.id)
+                setDraggingTaskId(todo.id)
+              }}
+              onClick={() => selectTodo(todo.id)}
+              className={`px-2.5 py-1.5 bg-surface rounded-md border text-sm text-text flex items-center gap-2 hover:shadow-sm cursor-pointer ${
+                selectedTodoId === todo.id
+                  ? 'border-primary ring-1 ring-primary/40 cursor-grab'
+                  : 'border-border cursor-grab hover:border-primary/40'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForTodo(todo) }} />
+              <span className="truncate">{todo.text}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

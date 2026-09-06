@@ -246,7 +246,7 @@ export default function App() {
         </span>
       </button>
 
-      <div className="max-w-3xl mx-auto">
+      <div className={`${activeTab === 'timeblock' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto`}>
         {/* Header */}
         <header className="text-center mb-8 animate-fade-in">
           <h1 className="text-5xl font-bold text-primary mb-2 tracking-tight">
