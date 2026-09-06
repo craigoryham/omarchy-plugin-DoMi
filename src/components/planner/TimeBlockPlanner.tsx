@@ -364,9 +364,10 @@ export function TimeBlockPlanner({
           )}
         </aside>
       </div>
+    </div>
 
-      {/* Task queue rail — outside the planner card */}
-      <div className="mt-4 lg:mt-0 bg-surface rounded-xl shadow-md border border-border p-4 lg:sticky lg:top-4">
+    {/* Task queue rail — outside the planner card */}
+    <div className="mt-4 lg:mt-0 bg-surface rounded-xl shadow-md border border-border p-4 lg:sticky lg:top-4">
         <h4 className="text-sm font-semibold text-text mb-2">Drag a task to schedule</h4>
         <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
           {unplannedTodos.length === 0 && (
@@ -393,7 +394,6 @@ export function TimeBlockPlanner({
           ))}
         </div>
       </div>
-    </div>
     </div>
   )
 }
