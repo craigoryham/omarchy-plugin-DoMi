@@ -5,6 +5,7 @@ import { WeekGrid } from './WeekGrid'
 import { DayColumn } from './DayColumn'
 import { MonthGrid } from './MonthGrid'
 import { BlockDetails } from './BlockDetails'
+import { TodoDetails } from './TodoDetails'
 import { PLAN_START_HOUR, PLAN_END_HOUR, PLAN_HOUR_HEIGHT } from '../../types'
 
 interface TimeBlockPlannerProps {
@@ -18,6 +19,11 @@ interface TimeBlockPlannerProps {
   onAddTaskBlock: (date: string, startMinute: number, text: string) => string
   onToggleTask: (id: string) => void
   onUpdateTodo: (id: string, text: string) => void
+  onSetCategory: (id: string, categoryId: string | null) => void
+  onSetDueDate: (id: string, dueDate: string | null) => void
+  onSetTags: (id: string, tagIds: string[]) => void
+  onSetDescription: (id: string, description: string) => void
+  onDeleteTodo: (id: string) => void
 }
 
 type View = 'day' | 'week' | 'month'
@@ -42,13 +48,30 @@ export function TimeBlockPlanner({
   onAddTaskBlock,
   onToggleTask,
   onUpdateTodo,
+  onSetCategory,
+  onSetDueDate,
+  onSetTags,
+  onSetDescription,
+  onDeleteTodo,
 }: TimeBlockPlannerProps) {
   const [view, setView] = useState<View>('week')
   const [cursor, setCursor] = useState<Date>(() => new Date())
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null)
 
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) ?? null
+  const selectedQueueTodo = selectedTodoId ? todos.find((t) => t.id === selectedTodoId) ?? null : null
+
+  const selectBlock = (id: string | null) => {
+    setSelectedTodoId(null)
+    setSelectedBlockId(id)
+  }
+
+  const selectTodo = (id: string) => {
+    setSelectedBlockId(null)
+    setSelectedTodoId(id)
+  }
   const todayKey = dateKey(new Date())
   const weekStart = startOfWeek(cursor)
   const monthAnchor = startOfMonth(cursor)
@@ -245,7 +268,7 @@ export function TimeBlockPlanner({
               selectedBlockId={selectedBlockId}
               todayKey={todayKey}
               focusedDay={Math.min(4, Math.max(0, cursor.getDay() - 1))}
-              onSelectBlock={setSelectedBlockId}
+              onSelectBlock={selectBlock}
               onDrop={handleDrop}
               onGridClick={handleGridClick}
               onToggleTask={onToggleTask}
@@ -273,7 +296,7 @@ export function TimeBlockPlanner({
                 tags={tags}
                 selectedBlockId={selectedBlockId}
                 isToday={true}
-                onSelectBlock={setSelectedBlockId}
+                onSelectBlock={selectBlock}
                 onDrop={handleDrop}
                 onGridClick={handleGridClick}
                 onToggleTask={onToggleTask}
@@ -290,7 +313,7 @@ export function TimeBlockPlanner({
               tags={tags}
               selectedBlockId={selectedBlockId}
               todayKey={todayKey}
-              onSelectBlock={setSelectedBlockId}
+              onSelectBlock={selectBlock}
               onOpenDay={handleOpenDay}
               onDropOnDay={handleDropOnDay}
             />
@@ -299,7 +322,21 @@ export function TimeBlockPlanner({
 
         {/* Sidebar */}
         <aside className="space-y-4">
-          {selectedBlock ? (
+          {selectedQueueTodo ? (
+            <TodoDetails
+              todo={selectedQueueTodo}
+              categories={categories}
+              tags={tags}
+              onClose={() => setSelectedTodoId(null)}
+              onUpdateTodo={onUpdateTodo}
+              onSetCategory={onSetCategory}
+              onSetDueDate={onSetDueDate}
+              onSetTags={onSetTags}
+              onSetDescription={onSetDescription}
+              onToggle={onToggleTask}
+              onDelete={onDeleteTodo}
+            />
+          ) : selectedBlock ? (
             <BlockDetails
               block={selectedBlock}
               todo={getTodo(selectedBlock.taskId)}
@@ -311,7 +348,7 @@ export function TimeBlockPlanner({
             />
           ) : (
             <div className="bg-surface-alt rounded-lg p-3 border border-border">
-              <p className="text-xs text-text-muted">Select a block to edit details.</p>
+              <p className="text-xs text-text-muted">Select a block or task to edit details.</p>
             </div>
           )}
 
@@ -330,7 +367,12 @@ export function TimeBlockPlanner({
                     e.dataTransfer.setData('text/plain', todo.id)
                     setDraggingTaskId(todo.id)
                   }}
-                  className="px-2.5 py-1.5 bg-surface rounded-md border border-border text-sm text-text cursor-grab flex items-center gap-2 hover:border-primary/40 hover:shadow-sm active:cursor-grabbing"
+                  onClick={() => selectTodo(todo.id)}
+                  className={`px-2.5 py-1.5 bg-surface rounded-md border text-sm text-text flex items-center gap-2 hover:shadow-sm cursor-pointer ${
+                    selectedTodoId === todo.id
+                      ? 'border-primary ring-1 ring-primary/40 cursor-grab'
+                      : 'border-border cursor-grab hover:border-primary/40'
+                  }`}
                 >
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForTodo(todo) }} />
                   <span className="truncate">{todo.text}</span>

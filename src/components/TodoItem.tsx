@@ -4,21 +4,25 @@ import type { Todo, Category, Tag } from '../types'
 interface TodoItemProps {
   todo: Todo
   category: Category | undefined
+  categories: Category[]
   tags: Tag[]
   onToggle: (id: string) => void
   onDelete: (id: string) => void
   onEdit: (id: string, text: string) => void
   onSetTags: (id: string, tagIds: string[]) => void
   onSetDescription: (id: string, description: string) => void
+  onSetCategory: (id: string, categoryId: string | null) => void
+  onSetDueDate: (id: string, dueDate: string | null) => void
 }
 
-export function TodoItem({ todo, category, tags, onToggle, onDelete, onEdit, onSetTags, onSetDescription }: TodoItemProps) {
+export function TodoItem({ todo, category, categories, tags, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(todo.text)
   const [showTags, setShowTags] = useState(false)
   const [tagDraft, setTagDraft] = useState<string[]>(todo.tagIds ?? [])
   const [showDescription, setShowDescription] = useState(false)
   const [descDraft, setDescDraft] = useState(todo.description ?? '')
+  const [editingMeta, setEditingMeta] = useState<'category' | 'due' | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
 
@@ -135,13 +139,73 @@ export function TodoItem({ todo, category, tags, onToggle, onDelete, onEdit, onS
           </p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          {category && (
-            <span
-              className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white"
+          {editingMeta === 'category' ? (
+            <select
+              autoFocus
+              value={todo.categoryId ?? ''}
+              onChange={(e) => {
+                onSetCategory(todo.id, e.target.value || null)
+                setEditingMeta(null)
+              }}
+              onBlur={() => setEditingMeta(null)}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-surface-alt border border-primary/30 text-text focus:outline-none focus:ring-1 focus:ring-primary/30"
+            >
+              <option value="">No category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          ) : category ? (
+            <button
+              onClick={() => setEditingMeta('category')}
+              title="Change category"
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white cursor-pointer hover:opacity-80 transition-opacity"
               style={{ backgroundColor: category.color }}
             >
               {category.name}
-            </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setEditingMeta('category')}
+              title="Add category"
+              className="text-[10px] px-2 py-0.5 rounded-full border border-dashed border-border-light text-text-muted hover:border-text-muted hover:text-text transition-colors"
+            >
+              + Category
+            </button>
+          )}
+          {editingMeta === 'due' ? (
+            <input
+              type="date"
+              autoFocus
+              value={todo.dueDate ?? ''}
+              onChange={(e) => onSetDueDate(todo.id, e.target.value || null)}
+              onBlur={() => setEditingMeta(null)}
+              onKeyDown={(e) => e.key === 'Escape' && setEditingMeta(null)}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-surface-alt border border-primary/30 text-text focus:outline-none focus:ring-1 focus:ring-primary/30"
+            />
+          ) : todo.dueDate ? (
+            <button
+              onClick={() => setEditingMeta('due')}
+              title="Change due date"
+              className={`text-[10px] cursor-pointer hover:underline ${
+                isOverdue ? 'text-danger font-medium' : 'text-text-muted'
+              }`}
+            >
+              {isOverdue ? 'Overdue' : ''} {new Date(todo.dueDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </button>
+          ) : (
+            <button
+              onClick={() => setEditingMeta('due')}
+              title="Add due date"
+              className="text-[10px] px-2 py-0.5 rounded-full border border-dashed border-border-light text-text-muted hover:border-text-muted hover:text-text transition-colors"
+            >
+              + Due
+            </button>
           )}
           {todoTags.map((t) => (
             <span
@@ -152,18 +216,6 @@ export function TodoItem({ todo, category, tags, onToggle, onDelete, onEdit, onS
               {t.name}
             </span>
           ))}
-          {todo.dueDate && (
-            <span
-              className={`text-[10px] ${
-                isOverdue ? 'text-danger font-medium' : 'text-text-muted'
-              }`}
-            >
-              {isOverdue ? 'Overdue' : ''} {new Date(todo.dueDate).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </span>
-          )}
         </div>
       </div>
 

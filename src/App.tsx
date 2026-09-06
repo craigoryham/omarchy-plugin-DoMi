@@ -140,6 +140,18 @@ export default function App() {
     )
   }
 
+  const setTodoCategory = (id: string, categoryId: string | null) => {
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, categoryId } : t))
+    )
+  }
+
+  const setTodoDueDate = (id: string, dueDate: string | null) => {
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, dueDate } : t))
+    )
+  }
+
   const addTag = (name: string, color: string) => {
     const newTag: Tag = { id: `tag-${uuidv4()}`, name, color }
     setTags((prev) => [...prev, newTag])
@@ -277,6 +289,11 @@ export default function App() {
               onAddTaskBlock={addTaskBlock}
               onToggleTask={toggleTodo}
               onUpdateTodo={editTodo}
+              onSetCategory={setTodoCategory}
+              onSetDueDate={setTodoDueDate}
+              onSetTags={setTodoTags}
+              onSetDescription={setTodoDescription}
+              onDeleteTodo={deleteTodo}
             />
           </div>
         ) : (
@@ -326,6 +343,8 @@ export default function App() {
                 onEdit={editTodo}
                 onSetTags={setTodoTags}
                 onSetDescription={setTodoDescription}
+                onSetCategory={setTodoCategory}
+                onSetDueDate={setTodoDueDate}
               />
             </div>
           </>

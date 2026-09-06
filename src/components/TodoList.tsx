@@ -10,9 +10,11 @@ interface TodoListProps {
   onEdit: (id: string, text: string) => void
   onSetTags: (id: string, tagIds: string[]) => void
   onSetDescription: (id: string, description: string) => void
+  onSetCategory: (id: string, categoryId: string | null) => void
+  onSetDueDate: (id: string, dueDate: string | null) => void
 }
 
-export function TodoList({ todos, categories, tags, onToggle, onDelete, onEdit, onSetTags, onSetDescription }: TodoListProps) {
+export function TodoList({ todos, categories, tags, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoListProps) {
   const getCategory = (id: string | null) => categories.find((c) => c.id === id)
 
   if (todos.length === 0) {
@@ -35,12 +37,15 @@ export function TodoList({ todos, categories, tags, onToggle, onDelete, onEdit, 
           key={todo.id}
           todo={todo}
           category={getCategory(todo.categoryId)}
+          categories={categories}
           tags={tags}
           onToggle={onToggle}
           onDelete={onDelete}
           onEdit={onEdit}
           onSetTags={onSetTags}
           onSetDescription={onSetDescription}
+          onSetCategory={onSetCategory}
+          onSetDueDate={onSetDueDate}
         />
       ))}
 
@@ -59,12 +64,15 @@ export function TodoList({ todos, categories, tags, onToggle, onDelete, onEdit, 
           key={todo.id}
           todo={todo}
           category={getCategory(todo.categoryId)}
+          categories={categories}
           tags={tags}
           onToggle={onToggle}
           onDelete={onDelete}
           onEdit={onEdit}
           onSetTags={onSetTags}
           onSetDescription={onSetDescription}
+          onSetCategory={onSetCategory}
+          onSetDueDate={onSetDueDate}
         />
       ))}
     </div>
