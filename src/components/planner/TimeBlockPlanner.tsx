@@ -216,6 +216,7 @@ export function TimeBlockPlanner({
     : ''
 
   return (
+    <>
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-4 lg:items-start">
       <div className="bg-surface rounded-xl shadow-md border border-border p-4">
       {/* Header */}
@@ -265,7 +266,7 @@ export function TimeBlockPlanner({
         </div>
       </div>
 
-      <div className="grid md:grid-cols-[1fr_220px] gap-4">
+      <div>
         {/* Main view */}
         <div>
           {(view === 'workweek' || view === 'week7') && (
@@ -331,43 +332,12 @@ export function TimeBlockPlanner({
           )}
         </div>
 
-        {/* Sidebar */}
-        <aside className="space-y-4">
-          {selectedQueueTodo ? (
-            <TodoDetails
-              todo={selectedQueueTodo}
-              categories={categories}
-              tags={tags}
-              onClose={() => setSelectedTodoId(null)}
-              onUpdateTodo={onUpdateTodo}
-              onSetCategory={onSetCategory}
-              onSetDueDate={onSetDueDate}
-              onSetTags={onSetTags}
-              onSetDescription={onSetDescription}
-              onToggle={onToggleTask}
-              onDelete={onDeleteTodo}
-            />
-          ) : selectedBlock ? (
-            <BlockDetails
-              block={selectedBlock}
-              todo={getTodo(selectedBlock.taskId)}
-              weekLabel={blockWeekday}
-              onClose={() => setSelectedBlockId(null)}
-              onUpdate={onUpdateBlock}
-              onUpdateTodo={onUpdateTodo}
-              onDelete={onDeleteBlock}
-            />
-          ) : (
-            <div className="bg-surface-alt rounded-lg p-3 border border-border">
-              <p className="text-xs text-text-muted">Select a block or task to edit details.</p>
-            </div>
-          )}
-        </aside>
-      </div>
+        </div>
     </div>
 
-    {/* Task queue rail — outside the planner card */}
-    <div className="mt-4 lg:mt-0 bg-surface rounded-xl shadow-md border border-border p-4 lg:sticky lg:top-4">
+    {/* Right rail — task queue + details */}
+    <div className="mt-4 lg:mt-0 space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div className="bg-surface rounded-xl shadow-md border border-border p-4">
         <h4 className="text-sm font-semibold text-text mb-2">Drag a task to schedule</h4>
         <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
           {unplannedTodos.length === 0 && (
@@ -394,6 +364,34 @@ export function TimeBlockPlanner({
           ))}
         </div>
       </div>
+
+      {selectedQueueTodo ? (
+        <TodoDetails
+          todo={selectedQueueTodo}
+          categories={categories}
+          tags={tags}
+          onClose={() => setSelectedTodoId(null)}
+          onUpdateTodo={onUpdateTodo}
+          onSetCategory={onSetCategory}
+          onSetDueDate={onSetDueDate}
+          onSetTags={onSetTags}
+          onSetDescription={onSetDescription}
+          onToggle={onToggleTask}
+          onDelete={onDeleteTodo}
+        />
+      ) : selectedBlock ? (
+        <BlockDetails
+          block={selectedBlock}
+          todo={getTodo(selectedBlock.taskId)}
+          weekLabel={blockWeekday}
+          onClose={() => setSelectedBlockId(null)}
+          onUpdate={onUpdateBlock}
+          onUpdateTodo={onUpdateTodo}
+          onDelete={onDeleteBlock}
+        />
+      ) : null}
     </div>
+    </div>
+    </>
   )
 }
