@@ -55,6 +55,8 @@ function fmtMonthDay(d: Date): string {
 const VIEW_OPTIONS: View[] = ['day', 'workweek', 'week7', 'month']
 const WEEK_SURFACE_OPTIONS: View[] = ['preview', 'ahead']
 const ALL_VIEW_OPTIONS: View[] = [...VIEW_OPTIONS, ...WEEK_SURFACE_OPTIONS]
+const PILL_ORDER: View[] = ['preview', 'day', 'workweek', 'week7', 'ahead', 'month']
+const SEPARATOR_AFTER: View = 'ahead'
 
 const VIEW_STORAGE_KEY = 'domi-view-mode'
 
@@ -276,9 +278,12 @@ export function TimeBlockPlanner({
       {/* View toggle */}
       <div className="flex justify-center mb-4">
         <div className="inline-flex items-center rounded-lg bg-surface-alt border border-border p-0.5">
-          {VIEW_OPTIONS.map(pill)}
-          <span className="w-px self-stretch bg-border mx-1 my-1" />
-          {WEEK_SURFACE_OPTIONS.map(pill)}
+          {PILL_ORDER.map((v) => (
+            <>
+              {pill(v)}
+              {v === SEPARATOR_AFTER && <span className="w-px self-stretch bg-border mx-1" />}
+            </>
+          ))}
         </div>
       </div>
       {weekSurface ? (
