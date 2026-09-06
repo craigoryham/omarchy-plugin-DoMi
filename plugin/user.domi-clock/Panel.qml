@@ -255,12 +255,16 @@ Panel {
               spacing: Style.space(6)
 
               Row {
+                id: heroBrandRow
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: Style.space(12)
 
                 Text {
+                  id: doMiWordmark
                   text: "DoMi"
-                  color: root.brandColor
+                  color: domiWordmarkMouse.containsMouse
+                    ? Style.hoverStateColor(root.brandColor, Color.accent)
+                    : root.brandColor
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.displayLarge
                   font.letterSpacing: 1.2
@@ -309,25 +313,24 @@ Panel {
               }
             }
 
-            // Open DoMi link — top-right corner of the hero
-            Text {
-              textFormat: Text.PlainText
-              anchors.top: parent.top
-              anchors.right: parent.right
-              text: "Open DoMi →"
-              color: doMiMouse.containsMouse
-                ? Style.hoverStateColor(root.contentForeground, Color.accent)
-                : Qt.darker(root.contentForeground, 1.5)
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-              font.letterSpacing: 1
+            // DoMi wordmark button — opens DoMi and closes the panel
+            MouseArea {
+              id: domiWordmarkMouse
+              x: heroColumn.x + heroBrandRow.x + doMiWordmark.x
+              y: heroColumn.y + heroBrandRow.y + doMiWordmark.y
+              width: doMiWordmark.width
+              height: doMiWordmark.height
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                root.openDoMi()
+                root.close()
+              }
 
-              MouseArea {
-                id: doMiMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openDoMi()
+              PanelToolTip {
+                visible: domiWordmarkMouse.containsMouse
+                text: "Open DoMi"
+                fontFamily: root.contentFontFamily
               }
             }
           }
