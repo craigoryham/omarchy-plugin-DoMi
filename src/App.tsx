@@ -12,10 +12,11 @@ import { TodoList } from './components/TodoList'
 import { CategoryFilter } from './components/CategoryFilter'
 import { TagManager } from './components/TagManager'
 import { NotesView } from './components/NotesView'
+import { WeekView } from './components/WeekView'
 import { TimeBlockPlanner } from './components/planner/TimeBlockPlanner'
 
 type FilterStatus = 'all' | 'active' | 'completed'
-type ActiveTab = 'tasks' | 'timeblock' | 'notes'
+type ActiveTab = 'tasks' | 'timeblock' | 'notes' | 'preview' | 'ahead'
 
 export default function App() {
   const { theme, cycle, paletteThemeName } = useTheme()
@@ -32,7 +33,7 @@ export default function App() {
     'domi-weekly-plans',
     {}
   )
-  const [weekNotes] = useLocalStorage<WeekNotes>('domi-week-notes', {})
+  const [weekNotes, setWeekNotes] = useLocalStorage<WeekNotes>('domi-week-notes', {})
   const currentWeekKey = dateKey(startOfWeek(new Date()))
   const currentWeekTodoIds = weeklyPlans[currentWeekKey] ?? []
   const exportBlocks = useMemo(
@@ -260,6 +261,10 @@ export default function App() {
     })
   }
 
+  const setWeekNote = (weekKey: string, text: string) => {
+    setWeekNotes((prev) => ({ ...prev, [weekKey]: text }))
+  }
+
   const openTodoFromNote = (id: string) => {
     setActiveTab('tasks')
     setFocusTodoId(id)
@@ -314,7 +319,7 @@ export default function App() {
         </span>
       </button>
 
-      <div className={`${activeTab === 'timeblock' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto`}>
+      <div className={`${activeTab === 'timeblock' ? 'max-w-6xl' : activeTab === 'preview' || activeTab === 'ahead' ? 'max-w-5xl' : 'max-w-3xl'} mx-auto`}>
         {/* Header */}
         <header className="text-center mb-8 animate-fade-in">
           <h1 className="text-5xl font-bold text-primary mb-2 tracking-tight">
@@ -372,6 +377,19 @@ export default function App() {
               tags={tags}
               weekNotes={weekNotes}
               onOpenTodo={openTodoFromNote}
+            />
+          </div>
+        ) : activeTab === 'preview' || activeTab === 'ahead' ? (
+          <div className="mt-6 animate-fade-in" style={{ animationDelay: '0.15s' }}>
+            <WeekView
+              offset={activeTab === 'ahead' ? 1 : 0}
+              todos={todos}
+              categories={categories}
+              tags={tags}
+              weeklyPlans={weeklyPlans}
+              weekNotes={weekNotes}
+              onToggleInWeek={toggleTaskInWeek}
+              onSetWeekNote={setWeekNote}
             />
           </div>
         ) : (
