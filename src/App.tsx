@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import type { Category, Tag, Todo, TimeBlock } from './types'
+import type { Category, Tag, Todo, TimeBlock, WeeklyPlans } from './types'
 import { DEFAULT_CATEGORIES, DEFAULT_TAGS } from './types'
+import { dateKey, startOfWeek } from './components/planner/date'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useBlockExporter } from './hooks/useBlockExporter'
 import { useTheme } from './hooks/useTheme'
@@ -25,6 +26,12 @@ export default function App() {
   )
   const [tags, setTags] = useLocalStorage<Tag[]>('domi-tags', DEFAULT_TAGS)
   const [blocks, setBlocks] = useLocalStorage<TimeBlock[]>('domi-blocks', [])
+  const [weeklyPlans, setWeeklyPlans] = useLocalStorage<WeeklyPlans>(
+    'domi-weekly-plans',
+    {}
+  )
+  const currentWeekKey = dateKey(startOfWeek(new Date()))
+  const currentWeekTodoIds = weeklyPlans[currentWeekKey] ?? []
   const exportBlocks = useMemo(
     () =>
       blocks.map((b) =>
@@ -97,6 +104,31 @@ export default function App() {
     )
   }
 
+  // Weekly plans: on week rollover (or first ever run) seed the current
+  // week. Idempotent — once the current week key exists (even if emptied)
+  // this never fires again. Carry-over pulls incomplete members forward from
+  // the most recent prior week; the very first run seeds from the unscheduled
+  // inventory so the queue doesn't boot empty.
+  if (!(currentWeekKey in weeklyPlans)) {
+    const priorKeys = Object.keys(weeklyPlans)
+      .filter((k) => k < currentWeekKey)
+      .sort()
+    const priorKey = priorKeys[priorKeys.length - 1]
+    const todosById = new Map(todos.map((t) => [t.id, t]))
+    let memberIds: string[]
+    if (priorKey) {
+      memberIds = (weeklyPlans[priorKey] ?? []).filter(
+        (id) => todosById.has(id) && !todosById.get(id)?.completed
+      )
+    } else {
+      const scheduled = new Set(blocks.filter((b) => b.taskId).map((b) => b.taskId))
+      memberIds = todos
+        .filter((t) => !t.completed && !scheduled.has(t.id))
+        .map((t) => t.id)
+    }
+    setWeeklyPlans((prev) => ({ ...prev, [currentWeekKey]: memberIds }))
+  }
+
   const addTodo = (text: string, categoryId: string | null, tagIds: string[], dueDate: string | null, description = '') => {
     const newTodo: Todo = {
       id: uuidv4(),
@@ -120,6 +152,14 @@ export default function App() {
   const deleteTodo = (id: string) => {
     setTodos((prev) => prev.filter((t) => t.id !== id))
     setBlocks((prev) => prev.filter((b) => b.taskId !== id))
+    setWeeklyPlans((prev) => {
+      const next: WeeklyPlans = {}
+      for (const week in prev) {
+        const filtered = prev[week].filter((todoId) => todoId !== id)
+        if (filtered.length > 0 || week === currentWeekKey) next[week] = filtered
+      }
+      return next
+    })
   }
 
   const editTodo = (id: string, text: string) => {
@@ -195,7 +235,26 @@ export default function App() {
     }
     setTodos((prev) => [todo, ...prev])
     setBlocks((prev) => [...prev, block])
+    addTasksToWeek([todo.id])
     return block.id
+  }
+
+  // ---- Weekly plan membership ----
+  const addTasksToWeek = (ids: string[]) => {
+    setWeeklyPlans((prev) => {
+      const existing = prev[currentWeekKey] ?? []
+      const merged = [...existing, ...ids.filter((id) => !existing.includes(id))]
+      return { ...prev, [currentWeekKey]: merged }
+    })
+  }
+
+  const toggleTaskInWeek = (id: string) => {
+    setWeeklyPlans((prev) => {
+      const existing = prev[currentWeekKey] ?? []
+      return existing.includes(id)
+        ? { ...prev, [currentWeekKey]: existing.filter((x) => x !== id) }
+        : { ...prev, [currentWeekKey]: [...existing, id] }
+    })
   }
 
   const updateBlock = (id: string, patch: Partial<TimeBlock>) => {
@@ -281,6 +340,7 @@ export default function App() {
             <TimeBlockPlanner
               blocks={blocks}
               todos={todos}
+              queueTodoIds={currentWeekTodoIds}
               categories={categories}
               tags={tags}
               onAddBlock={addBlock}
@@ -338,6 +398,8 @@ export default function App() {
                 todos={filteredTodos}
                 categories={categories}
                 tags={tags}
+                weekTodoIds={currentWeekTodoIds}
+                onToggleWeek={toggleTaskInWeek}
                 onToggle={toggleTodo}
                 onDelete={deleteTodo}
                 onEdit={editTodo}

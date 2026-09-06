@@ -6,6 +6,8 @@ interface TodoItemProps {
   category: Category | undefined
   categories: Category[]
   tags: Tag[]
+  inWeek: boolean
+  onToggleWeek: () => void
   onToggle: (id: string) => void
   onDelete: (id: string) => void
   onEdit: (id: string, text: string) => void
@@ -15,7 +17,7 @@ interface TodoItemProps {
   onSetDueDate: (id: string, dueDate: string | null) => void
 }
 
-export function TodoItem({ todo, category, categories, tags, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoItemProps) {
+export function TodoItem({ todo, category, categories, tags, inWeek, onToggleWeek, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(todo.text)
   const [showTags, setShowTags] = useState(false)
@@ -139,6 +141,17 @@ export function TodoItem({ todo, category, categories, tags, onToggle, onDelete,
           </p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {inWeek && (
+            <span
+              title="Loaded into this week's queue"
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary inline-flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 2v2m8-2v2M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+              </svg>
+              This week
+            </span>
+          )}
           {editingMeta === 'category' ? (
             <select
               autoFocus
@@ -221,6 +234,21 @@ export function TodoItem({ todo, category, categories, tags, onToggle, onDelete,
 
       {/* Actions */}
       <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {!todo.completed && (
+          <button
+            onClick={onToggleWeek}
+            className={`p-1.5 rounded-lg transition-colors ${
+              inWeek
+                ? 'text-primary hover:bg-primary/10'
+                : 'text-text-muted hover:text-primary hover:bg-primary/10'
+            }`}
+            title={inWeek ? 'Remove from this week' : 'Add to this week'}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 2v2m8-2v2M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zM12 11v6M9 14h6" />
+            </svg>
+          </button>
+        )}
         {!todo.completed && (
           <button
             onClick={() => setIsEditing(true)}

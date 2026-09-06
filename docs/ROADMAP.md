@@ -1,45 +1,5 @@
 # DoMi Roadmap — parked features
 
-## Master/weekly task scheduling
-
-Two-tier planning: the current task list becomes the **master list**, and users
-load tasks into a per-**week** list that the time-block planner works from.
-
-### Recommended design
-
-- **Data**: new `domi-weekly-plans` localStorage state —
-  `{ [weekKey]: string[] }` where weekKey is the Monday `dateKey`
-  (e.g. `2026-09-07`); no `Todo` type change; past weeks persist as history.
-  Weeks are Monday-based, matching `startOfWeek()` in
-  `src/components/planner/date.ts`.
-- **Master list (Tasks tab)**: each TodoItem gets an "Add to this week" toggle
-  in its action row; tasks in the current week show an active badge. The list
-  itself stays the full inventory.
-- **Planner (Plan tab)**: the sidebar queue source changes from "all
-  unscheduled tasks" to "this week's loaded tasks, minus completed and
-  scheduled"; heading becomes "This week's tasks". Grid-click task creation
-  auto-joins the current week's list.
-- **Bootstrap migration**: on first run (no `domi-weekly-plans` key), seed the
-  current week with all incomplete, unscheduled tasks so the queue doesn't
-  empty out.
-
-### Open questions (answer these before starting)
-
-1. **Week rollover**: auto carry-over incomplete tasks into the new week
-   (classic weekly-review flow) vs fresh week every time (old lists remain
-   viewable history) vs manual move only.
-2. **Queue scope**: always the current week's list, or follow the planner's
-   cursor when navigating to other weeks.
-3. **Completed tasks in queue**: hide entirely (current behavior) or show
-   completed-this-week dimmed at the bottom for weekly review.
-
-### Prior work this builds on
-
-- The TodoDetails queue-editing batch — weekly queue tasks get edited through
-  that panel (inline/full editing lives there, not in new queue markup).
-- `unplannedTodos` derivation in `TimeBlockPlanner.tsx` (`!completed` and
-  `!scheduledTaskIds.has(id)`) is the shape the weekly filter replaces.
-
 ## 7 Day view + rename "Week" to "Work Week"
 
 The current 5-day "Week" view is really a work week (Mon–Fri only); rename it

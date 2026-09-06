@@ -4,6 +4,8 @@ export interface Category {
   color: string
 }
 
+export type WeeklyPlans = Record<string, string[]>
+
 export interface Tag {
   id: string
   name: string

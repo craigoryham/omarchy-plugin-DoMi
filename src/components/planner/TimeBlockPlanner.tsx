@@ -11,6 +11,7 @@ import { PLAN_START_HOUR, PLAN_END_HOUR, PLAN_HOUR_HEIGHT } from '../../types'
 interface TimeBlockPlannerProps {
   blocks: TimeBlock[]
   todos: Todo[]
+  queueTodoIds: string[]
   categories: Category[]
   tags: Tag[]
   onAddBlock: (block: Omit<TimeBlock, 'id'>) => void
@@ -56,6 +57,7 @@ function loadSavedView(): View {
 export function TimeBlockPlanner({
   blocks,
   todos,
+  queueTodoIds,
   categories,
   tags,
   onAddBlock,
@@ -199,12 +201,19 @@ export function TimeBlockPlanner({
     setView('day')
   }
 
-  // -------- scheduled tasks (anywhere) --------
+  // -------- weekly queue (this week's loaded tasks) --------
   const scheduledTaskIds = new Set<string>()
   for (const b of blocks) {
     if (b.taskId) scheduledTaskIds.add(b.taskId)
   }
-  const unplannedTodos = todos.filter((t) => !t.completed && !scheduledTaskIds.has(t.id))
+  const todosById = new Map(todos.map((t) => [t.id, t]))
+  const weekTodos = queueTodoIds
+    .map((id) => todosById.get(id))
+    .filter((t): t is Todo => t !== undefined)
+  const unplannedTodos = weekTodos.filter(
+    (t) => !t.completed && !scheduledTaskIds.has(t.id)
+  )
+  const completedWeekTodos = weekTodos.filter((t) => t.completed)
 
   const isCurrent = view === 'month'
     ? cursor.getMonth() === new Date().getMonth() && cursor.getFullYear() === new Date().getFullYear()
@@ -350,7 +359,10 @@ export function TimeBlockPlanner({
     {/* Right rail — task queue + details */}
     <div className="mt-4 lg:mt-0 space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
       <div className="bg-surface rounded-xl shadow-md border border-border p-4">
-        <h4 className="text-sm font-semibold text-text mb-2">Drag a task to schedule</h4>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-semibold text-text">This week's tasks</h4>
+          <span className="text-xs text-text-muted tabular-nums">{unplannedTodos.length}</span>
+        </div>
         <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
           {unplannedTodos.length === 0 && (
             <p className="text-xs text-text-muted">All tasks scheduled. Nice!</p>
@@ -374,6 +386,31 @@ export function TimeBlockPlanner({
               <span className="truncate">{todo.text}</span>
             </div>
           ))}
+          {completedWeekTodos.length > 0 && (
+            <>
+              <div className="flex items-center gap-3 pt-1">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] text-text-muted font-medium">
+                  Done · {completedWeekTodos.length}
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              {completedWeekTodos.map((todo) => (
+                <div
+                  key={todo.id}
+                  onClick={() => selectTodo(todo.id)}
+                  className={`px-2.5 py-1.5 bg-surface rounded-md border text-sm flex items-center gap-2 cursor-pointer hover:shadow-sm ${
+                    selectedTodoId === todo.id
+                      ? 'border-primary ring-1 ring-primary/40'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0 opacity-50" style={{ backgroundColor: colorForTodo(todo) }} />
+                  <span className="truncate text-text-muted line-through">{todo.text}</span>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
 
