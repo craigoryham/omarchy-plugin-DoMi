@@ -394,5 +394,6 @@ export function TimeBlockPlanner({
         </div>
       </div>
     </div>
+    </div>
   )
 }
