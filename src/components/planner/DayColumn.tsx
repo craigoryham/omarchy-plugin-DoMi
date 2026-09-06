@@ -1,6 +1,8 @@
 import type { Todo, Category, Tag, TimeBlock } from '../../types'
 import { PLAN_START_HOUR, PLAN_END_HOUR, PLAN_HOUR_HEIGHT } from '../../types'
 
+export type Density = 'full' | 'compact' | 'minimal'
+
 interface DayColumnProps {
   date: string
   blocks: TimeBlock[]
@@ -9,6 +11,7 @@ interface DayColumnProps {
   tags: Tag[]
   selectedBlockId: string | null
   isToday: boolean
+  density?: Density
   onSelectBlock: (id: string | null) => void
   onDrop: (date: string, minuteOffset: number) => void
   onGridClick: (date: string, minuteOffset: number) => void
@@ -29,6 +32,16 @@ function colorForTodo(todo: Todo | undefined, tags: Tag[], categories: Category[
   return tag ? tag.color : '#64748b'
 }
 
+function formatTimeRange(startMin: number, durMin: number): string {
+  const startH = Math.floor(startMin / 60)
+  const startM = startMin % 60
+  const endMin = startMin + durMin
+  const endH = Math.floor(endMin / 60)
+  const endM = endMin % 60
+  const fmt = (h: number, m: number) => `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
+  return `${fmt(startH, startM)} – ${fmt(endH, endM)}`
+}
+
 export function DayColumn({
   date,
   blocks,
@@ -37,6 +50,7 @@ export function DayColumn({
   tags,
   selectedBlockId,
   isToday,
+  density = 'compact',
   onSelectBlock,
   onDrop,
   onGridClick,
@@ -118,13 +132,16 @@ export function DayColumn({
                 ↩
               </button>
             )}
-            <p className={`font-medium truncate ${todo?.completed ? 'line-through' : ''}`}>{columnTitle(block, todos)}</p>
-            {(h > 30 || block.description || block.meeting) && (
+            <p className={`font-medium ${density === 'full' ? 'line-clamp-2' : 'truncate'} ${todo?.completed ? 'line-through' : ''}`}>{columnTitle(block, todos)}</p>
+            {density !== 'minimal' && (
               <p className="opacity-80 text-[10px] truncate">
-                {String(Math.floor(block.startMinute / 60) % 12 || 12)}:{String(block.startMinute % 60).padStart(2, '0')} {Math.floor(block.startMinute / 60) < 12 ? 'AM' : 'PM'}
+                {formatTimeRange(block.startMinute, block.durationMin)}
                 {' · '}{block.durationMin}m
                 {block.meeting ? ' · Meeting' : ''}
               </p>
+            )}
+            {density === 'full' && block.description && (
+              <p className="opacity-70 text-[10px] line-clamp-1 mt-0.5">{block.description}</p>
             )}
           </div>
         )

@@ -32,7 +32,7 @@ export default function App() {
     'domi-weekly-plans',
     {}
   )
-  const [weekNotes] = useLocalStorage<WeekNotes>('domi-week-notes', {})
+  const [weekNotes, setWeekNotes] = useLocalStorage<WeekNotes>('domi-week-notes', {})
   const currentWeekKey = dateKey(startOfWeek(new Date()))
   const currentWeekTodoIds = weeklyPlans[currentWeekKey] ?? []
   const exportBlocks = useMemo(
@@ -260,6 +260,10 @@ export default function App() {
     })
   }
 
+  const setWeekNote = (weekKey: string, text: string) => {
+    setWeekNotes((prev) => ({ ...prev, [weekKey]: text }))
+  }
+
   const openTodoFromNote = (id: string) => {
     setActiveTab('tasks')
     setFocusTodoId(id)
@@ -314,7 +318,7 @@ export default function App() {
         </span>
       </button>
 
-      <div className={`${activeTab === 'timeblock' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto`}>
+      <div className={`${activeTab === 'timeblock' ? 'max-w-7xl' : 'max-w-3xl'} mx-auto`}>
         {/* Header */}
         <header className="text-center mb-8 animate-fade-in">
           <h1 className="text-5xl font-bold text-primary mb-2 tracking-tight">
@@ -350,6 +354,8 @@ export default function App() {
               blocks={blocks}
               todos={todos}
               queueTodoIds={currentWeekTodoIds}
+              weeklyPlans={weeklyPlans}
+              weekNotes={weekNotes}
               categories={categories}
               tags={tags}
               onAddBlock={addBlock}
@@ -357,6 +363,8 @@ export default function App() {
               onDeleteBlock={deleteBlock}
               onAddTaskBlock={addTaskBlock}
               onToggleTask={toggleTodo}
+              onToggleInWeek={toggleTaskInWeek}
+              onSetWeekNote={setWeekNote}
               onUpdateTodo={editTodo}
               onSetCategory={setTodoCategory}
               onSetDueDate={setTodoDueDate}

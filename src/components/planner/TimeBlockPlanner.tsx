@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
-import type { Todo, Category, Tag, TimeBlock } from '../../types'
+import type { Todo, Category, Tag, TimeBlock, WeeklyPlans, WeekNotes } from '../../types'
 import { addDays, addMonths, dateKey, startOfMonth, startOfWeek } from './date'
 import { WeekGrid } from './WeekGrid'
-import { DayColumn } from './DayColumn'
 import { MonthGrid } from './MonthGrid'
 import { BlockDetails } from './BlockDetails'
 import { TodoDetails } from './TodoDetails'
-import { PLAN_START_HOUR, PLAN_END_HOUR, PLAN_HOUR_HEIGHT } from '../../types'
+import { WeekView } from '../WeekView'
+import { PLAN_START_HOUR, PLAN_END_HOUR } from '../../types'
 
 interface TimeBlockPlannerProps {
   blocks: TimeBlock[]
   todos: Todo[]
   queueTodoIds: string[]
+  weeklyPlans: WeeklyPlans
+  weekNotes: WeekNotes
   categories: Category[]
   tags: Tag[]
   onAddBlock: (block: Omit<TimeBlock, 'id'>) => void
@@ -19,6 +21,8 @@ interface TimeBlockPlannerProps {
   onDeleteBlock: (id: string) => void
   onAddTaskBlock: (date: string, startMinute: number, text: string) => string
   onToggleTask: (id: string) => void
+  onToggleInWeek: (id: string, weekKey: string) => void
+  onSetWeekNote: (weekKey: string, text: string) => void
   onUpdateTodo: (id: string, text: string) => void
   onSetCategory: (id: string, categoryId: string | null) => void
   onSetDueDate: (id: string, dueDate: string | null) => void
@@ -27,13 +31,15 @@ interface TimeBlockPlannerProps {
   onDeleteTodo: (id: string) => void
 }
 
-type View = 'day' | 'workweek' | 'week7' | 'month'
+type View = 'day' | 'workweek' | 'week7' | 'month' | 'preview' | 'ahead'
 
 const VIEW_LABELS: Record<View, string> = {
   day: 'Day',
   workweek: 'Work Week',
   week7: '7 Day',
   month: 'Month',
+  preview: 'Preview',
+  ahead: 'Ahead',
 }
 
 const MONTH_NAMES = [
@@ -46,18 +52,24 @@ function fmtMonthDay(d: Date): string {
 }
 
 const VIEW_OPTIONS: View[] = ['day', 'workweek', 'week7', 'month']
+const WEEK_SURFACE_OPTIONS: View[] = ['preview', 'ahead']
+const ALL_VIEW_OPTIONS: View[] = [...VIEW_OPTIONS, ...WEEK_SURFACE_OPTIONS]
+const PILL_ORDER: View[] = ['preview', 'day', 'workweek', 'week7', 'ahead', 'month']
+const SEPARATOR_AFTER: View = 'ahead'
 
 const VIEW_STORAGE_KEY = 'domi-view-mode'
 
 function loadSavedView(): View {
   const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(VIEW_STORAGE_KEY) : null
-  return (VIEW_OPTIONS as string[]).includes(saved ?? '') ? (saved as View) : 'workweek'
+  return (ALL_VIEW_OPTIONS as string[]).includes(saved ?? '') ? (saved as View) : 'workweek'
 }
 
 export function TimeBlockPlanner({
   blocks,
   todos,
   queueTodoIds,
+  weeklyPlans,
+  weekNotes,
   categories,
   tags,
   onAddBlock,
@@ -65,6 +77,8 @@ export function TimeBlockPlanner({
   onDeleteBlock,
   onAddTaskBlock,
   onToggleTask,
+  onToggleInWeek,
+  onSetWeekNote,
   onUpdateTodo,
   onSetCategory,
   onSetDueDate,
@@ -96,8 +110,9 @@ export function TimeBlockPlanner({
   const todayKey = dateKey(new Date())
   const weekStart = startOfWeek(cursor)
   const monthAnchor = startOfMonth(cursor)
-  const weekDayCount = view === 'week7' ? 7 : 5
+  const weekDayCount = view === 'week7' ? 7 : view === 'day' ? 1 : 5
   const focusedDay = Math.min(weekDayCount - 1, (cursor.getDay() + 6) % 7)
+  const density = view === 'day' ? 'full' : view === 'week7' ? 'minimal' : 'compact'
 
   const hourLabels: number[] = []
   for (let h = PLAN_START_HOUR; h <= PLAN_END_HOUR; h++) hourLabels.push(h)
@@ -136,6 +151,13 @@ export function TimeBlockPlanner({
       const t = e.target as HTMLElement
       const tag = t?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (WEEK_SURFACE_OPTIONS.includes(view)) {
+        // Preview/Ahead weeks are fixed scopes; cursor nav is inert here.
+        if (e.key === 'm') setView('month')
+        else if (e.key === 'd') setView('day')
+        else if (e.key === 'w') setView('workweek')
+        return
+      }
       if (e.key === '[') navigate(-1)
       else if (e.key === ']') navigate(1)
       else if (e.key === 't') goToday()
@@ -236,9 +258,46 @@ export function TimeBlockPlanner({
     ? new Date(selectedBlock.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
     : ''
 
+  const weekSurface = WEEK_SURFACE_OPTIONS.includes(view)
+  const pill = (v: View) => (
+    <button
+      key={v}
+      onClick={() => setView(v)}
+      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+        view === v ? 'bg-primary text-white' : 'text-text-muted hover:text-text'
+      }`}
+    >
+      {VIEW_LABELS[v]}
+    </button>
+  )
+
   return (
     <>
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-4 lg:items-start">
+    <div className={weekSurface ? '' : 'lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-4 lg:items-start'}>
+      <div>
+      {/* View toggle */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex items-center rounded-lg bg-surface-alt border border-border p-0.5">
+          {PILL_ORDER.map((v) => (
+            <>
+              {pill(v)}
+              {v === SEPARATOR_AFTER && <span className="w-px self-stretch bg-border mx-1" />}
+            </>
+          ))}
+        </div>
+      </div>
+      {weekSurface ? (
+        <WeekView
+          offset={view === 'ahead' ? 1 : 0}
+          todos={todos}
+          categories={categories}
+          tags={tags}
+          weeklyPlans={weeklyPlans}
+          weekNotes={weekNotes}
+          onToggleInWeek={onToggleInWeek}
+          onSetWeekNote={onSetWeekNote}
+        />
+      ) : (
       <div className="bg-surface rounded-xl shadow-md border border-border p-4">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
@@ -270,29 +329,12 @@ export function TimeBlockPlanner({
         </button>
       </div>
 
-      {/* View toggle */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex rounded-lg bg-surface-alt border border-border p-0.5">
-          {VIEW_OPTIONS.map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                view === v ? 'bg-primary text-white' : 'text-text-muted hover:text-text'
-              }`}
-            >
-              {VIEW_LABELS[v]}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div>
         {/* Main view */}
         <div>
-          {(view === 'workweek' || view === 'week7') && (
+          {(view === 'workweek' || view === 'week7' || view === 'day') && (
             <WeekGrid
-              weekStart={weekStart}
+              weekStart={view === 'day' ? cursor : weekStart}
               dayCount={weekDayCount}
               blocks={blocks}
               todos={todos}
@@ -301,41 +343,13 @@ export function TimeBlockPlanner({
               selectedBlockId={selectedBlockId}
               todayKey={todayKey}
               focusedDay={focusedDay}
+              density={density}
               onSelectBlock={selectBlock}
               onDrop={handleDrop}
               onGridClick={handleGridClick}
               onToggleTask={onToggleTask}
               onRemoveBlock={onDeleteBlock}
             />
-          )}
-          {view === 'day' && (
-            <div className="grid grid-cols-[40px_1fr] border border-border rounded-lg overflow-hidden">
-              <div className="relative bg-surface-alt/50">
-                {hourLabels.map((h) => (
-                  <span
-                    key={h}
-                    className="absolute right-1 text-[10px] text-text-muted"
-                    style={{ top: (h - PLAN_START_HOUR) * PLAN_HOUR_HEIGHT - 6 }}
-                  >
-                    {h % 12 === 0 ? '12' : h % 12} {h < 12 ? 'AM' : 'PM'}
-                  </span>
-                ))}
-              </div>
-              <DayColumn
-                date={dateKey(cursor)}
-                blocks={blocks.filter((b) => b.date === dateKey(cursor))}
-                todos={todos}
-                categories={categories}
-                tags={tags}
-                selectedBlockId={selectedBlockId}
-                isToday={true}
-                onSelectBlock={selectBlock}
-                onDrop={handleDrop}
-                onGridClick={handleGridClick}
-                onToggleTask={onToggleTask}
-                onRemoveBlock={onDeleteBlock}
-              />
-            </div>
           )}
           {view === 'month' && (
             <MonthGrid
@@ -354,9 +368,12 @@ export function TimeBlockPlanner({
         </div>
 
         </div>
+      </div>
+      )}
     </div>
 
-    {/* Right rail — task queue + details */}
+    {/* Right rail — task queue + details (hidden on week surfaces) */}
+    {!weekSurface && (
     <div className="mt-4 lg:mt-0 space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
       <div className="bg-surface rounded-xl shadow-md border border-border p-4">
         <div className="flex items-center justify-between mb-2">
@@ -440,6 +457,7 @@ export function TimeBlockPlanner({
         />
       ) : null}
     </div>
+    )}
     </div>
     </>
   )
