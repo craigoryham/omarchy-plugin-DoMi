@@ -6,6 +6,7 @@ interface TodoListProps {
   categories: Category[]
   tags: Tag[]
   weekTodoIds: string[]
+  highlightTodoId?: string | null
   onToggleWeek: (id: string) => void
   onToggle: (id: string) => void
   onDelete: (id: string) => void
@@ -16,7 +17,7 @@ interface TodoListProps {
   onSetDueDate: (id: string, dueDate: string | null) => void
 }
 
-export function TodoList({ todos, categories, tags, weekTodoIds, onToggleWeek, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoListProps) {
+export function TodoList({ todos, categories, tags, weekTodoIds, highlightTodoId, onToggleWeek, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoListProps) {
   const getCategory = (id: string | null) => categories.find((c) => c.id === id)
   const weekSet = new Set(weekTodoIds)
 
@@ -43,6 +44,7 @@ export function TodoList({ todos, categories, tags, weekTodoIds, onToggleWeek, o
           categories={categories}
           tags={tags}
           inWeek={weekSet.has(todo.id)}
+          highlighted={highlightTodoId === todo.id}
           onToggleWeek={() => onToggleWeek(todo.id)}
           onToggle={onToggle}
           onDelete={onDelete}
@@ -72,6 +74,7 @@ export function TodoList({ todos, categories, tags, weekTodoIds, onToggleWeek, o
           categories={categories}
           tags={tags}
           inWeek={weekSet.has(todo.id)}
+          highlighted={highlightTodoId === todo.id}
           onToggleWeek={() => onToggleWeek(todo.id)}
           onToggle={onToggle}
           onDelete={onDelete}

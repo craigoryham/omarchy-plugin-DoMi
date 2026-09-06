@@ -1,12 +1,13 @@
 interface TabBarProps {
-  active: 'tasks' | 'timeblock'
-  onChange: (tab: 'tasks' | 'timeblock') => void
+  active: 'tasks' | 'timeblock' | 'notes'
+  onChange: (tab: 'tasks' | 'timeblock' | 'notes') => void
 }
 
 export function TabBar({ active, onChange }: TabBarProps) {
   const tabs = [
     { key: 'tasks' as const, label: 'Tasks' },
     { key: 'timeblock' as const, label: 'Time Block' },
+    { key: 'notes' as const, label: 'Notes' },
   ]
 
   return (

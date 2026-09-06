@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import type { Category, Tag, Todo, TimeBlock, WeeklyPlans } from './types'
+import type { Category, Tag, Todo, TimeBlock, WeeklyPlans, WeekNotes } from './types'
 import { DEFAULT_CATEGORIES, DEFAULT_TAGS } from './types'
 import { dateKey, startOfWeek } from './components/planner/date'
 import { useLocalStorage } from './hooks/useLocalStorage'
@@ -11,14 +11,16 @@ import { TodoForm } from './components/TodoForm'
 import { TodoList } from './components/TodoList'
 import { CategoryFilter } from './components/CategoryFilter'
 import { TagManager } from './components/TagManager'
+import { NotesView } from './components/NotesView'
 import { TimeBlockPlanner } from './components/planner/TimeBlockPlanner'
 
 type FilterStatus = 'all' | 'active' | 'completed'
-type ActiveTab = 'tasks' | 'timeblock'
+type ActiveTab = 'tasks' | 'timeblock' | 'notes'
 
 export default function App() {
   const { theme, cycle, paletteThemeName } = useTheme()
   const [activeTab, setActiveTab] = useState<ActiveTab>('tasks')
+  const [focusTodoId, setFocusTodoId] = useState<string | null>(null)
   const [todos, setTodos] = useLocalStorage<Todo[]>('domi-todos', [])
   const [categories] = useLocalStorage<Category[]>(
     'domi-categories',
@@ -30,6 +32,7 @@ export default function App() {
     'domi-weekly-plans',
     {}
   )
+  const [weekNotes] = useLocalStorage<WeekNotes>('domi-week-notes', {})
   const currentWeekKey = dateKey(startOfWeek(new Date()))
   const currentWeekTodoIds = weeklyPlans[currentWeekKey] ?? []
   const exportBlocks = useMemo(
@@ -235,26 +238,32 @@ export default function App() {
     }
     setTodos((prev) => [todo, ...prev])
     setBlocks((prev) => [...prev, block])
-    addTasksToWeek([todo.id])
+    addTasksToWeek([todo.id], dateKey(startOfWeek(new Date(date + 'T00:00:00'))))
     return block.id
   }
 
-  // ---- Weekly plan membership ----
-  const addTasksToWeek = (ids: string[]) => {
+  // ---- Weekly plan membership (defaults target the current week) ----
+  const addTasksToWeek = (ids: string[], weekKey: string = currentWeekKey) => {
     setWeeklyPlans((prev) => {
-      const existing = prev[currentWeekKey] ?? []
+      const existing = prev[weekKey] ?? []
       const merged = [...existing, ...ids.filter((id) => !existing.includes(id))]
-      return { ...prev, [currentWeekKey]: merged }
+      return { ...prev, [weekKey]: merged }
     })
   }
 
-  const toggleTaskInWeek = (id: string) => {
+  const toggleTaskInWeek = (id: string, weekKey: string = currentWeekKey) => {
     setWeeklyPlans((prev) => {
-      const existing = prev[currentWeekKey] ?? []
+      const existing = prev[weekKey] ?? []
       return existing.includes(id)
-        ? { ...prev, [currentWeekKey]: existing.filter((x) => x !== id) }
-        : { ...prev, [currentWeekKey]: [...existing, id] }
+        ? { ...prev, [weekKey]: existing.filter((x) => x !== id) }
+        : { ...prev, [weekKey]: [...existing, id] }
     })
+  }
+
+  const openTodoFromNote = (id: string) => {
+    setActiveTab('tasks')
+    setFocusTodoId(id)
+    window.setTimeout(() => setFocusTodoId(null), 2500)
   }
 
   const updateBlock = (id: string, patch: Partial<TimeBlock>) => {
@@ -356,6 +365,15 @@ export default function App() {
               onDeleteTodo={deleteTodo}
             />
           </div>
+        ) : activeTab === 'notes' ? (
+          <div className="mt-6 animate-fade-in" style={{ animationDelay: '0.15s' }}>
+            <NotesView
+              todos={todos}
+              tags={tags}
+              weekNotes={weekNotes}
+              onOpenTodo={openTodoFromNote}
+            />
+          </div>
         ) : (
           <>
             {/* Todo Form */}
@@ -399,6 +417,7 @@ export default function App() {
                 categories={categories}
                 tags={tags}
                 weekTodoIds={currentWeekTodoIds}
+                highlightTodoId={focusTodoId}
                 onToggleWeek={toggleTaskInWeek}
                 onToggle={toggleTodo}
                 onDelete={deleteTodo}

@@ -7,6 +7,7 @@ interface TodoItemProps {
   categories: Category[]
   tags: Tag[]
   inWeek: boolean
+  highlighted?: boolean
   onToggleWeek: () => void
   onToggle: (id: string) => void
   onDelete: (id: string) => void
@@ -17,7 +18,7 @@ interface TodoItemProps {
   onSetDueDate: (id: string, dueDate: string | null) => void
 }
 
-export function TodoItem({ todo, category, categories, tags, inWeek, onToggleWeek, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoItemProps) {
+export function TodoItem({ todo, category, categories, tags, inWeek, highlighted, onToggleWeek, onToggle, onDelete, onEdit, onSetTags, onSetDescription, onSetCategory, onSetDueDate }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(todo.text)
   const [showTags, setShowTags] = useState(false)
@@ -27,6 +28,13 @@ export function TodoItem({ todo, category, categories, tags, inWeek, onToggleWee
   const [editingMeta, setEditingMeta] = useState<'category' | 'due' | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const itemRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (highlighted) {
+      itemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [highlighted])
 
   useEffect(() => {
     if (isEditing) inputRef.current?.focus()
@@ -93,7 +101,10 @@ export function TodoItem({ todo, category, categories, tags, inWeek, onToggleWee
 
   return (
     <div
+      ref={itemRef}
       className={`group relative flex flex-col gap-3 p-4 rounded-xl border transition-all duration-200 animate-slide-in ${
+        highlighted ? 'ring-2 ring-primary/50 shadow-lg' : ''
+      } ${
         todo.completed
           ? 'bg-surface-alt/50 border-border-light'
           : isOverdue

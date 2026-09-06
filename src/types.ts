@@ -6,6 +6,8 @@ export interface Category {
 
 export type WeeklyPlans = Record<string, string[]>
 
+export type WeekNotes = Record<string, string>
+
 export interface Tag {
   id: string
   name: string
